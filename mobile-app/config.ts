@@ -11,19 +11,14 @@ const getWebApiUrl = (): string => {
       return `http://${match[1]}:5000`;
     }
     // 2. Direct exact PC local IP address on Wi-Fi (Jio/Airtel private hot-spots)
-    // IMPORTANT: If you are building the APK for production, replace this with your actual hosted backend URL!
-    // Example: return 'https://api.subko.app';
-    // ⚠️  BUG-06 PRODUCTION FIX REQUIRED ⚠️
-    // Replace the IP below with your actual production server URL before building APK.
-    // Example: return 'https://api.subme.app';
-    // Current value (local dev IP) won't work for users outside your Wi-Fi!
     if (!__DEV__) {
       // Production live Render server URL
-      return 'https://subme-api.onrender.com';
+      return 'https://subme-5zgl.onrender.com';
     }
     
     return 'http://10.65.96.229:5000';
   }
+  
   const hostname = window.location.hostname;
   const protocol = window.location.protocol;
   const port = window.location.port;
@@ -36,7 +31,7 @@ const getWebApiUrl = (): string => {
   return `${protocol}//${hostname}:5000`;
 };
 
-export const API_URL: string = getWebApiUrl();
-export const SUPABASE_URL: string = 'https://otbcyccbonxwaqslqtto.supabase.co';
-export const SUPABASE_ANON_KEY: string = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90YmN5Y2Nib254d2Fxc2xxdHRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzOTA0MzksImV4cCI6MjA5Nzk2NjQzOX0.vRu4c9aUKd8mF4M79IpmjGU6EqAzNo55_doXcPaPzYU';
+  export const API_URL: string = getWebApiUrl();
+  export const SUPABASE_URL: string = 'https://otbcyccbonxwaqslqtto.supabase.co';
+  export const SUPABASE_ANON_KEY: string = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90YmN5Y2Nib254d2Fxc2xxdHRvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzOTA0MzksImV4cCI6MjA5Nzk2NjQzOX0.vRu4c9aUKd8mF4M79IpmjGU6EqAzNo55_doXcPaPzYU';
 
