@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "SubMe",
+    "slug": "subme-app",
+    "version": "1.0.0",
+    "scheme": "subme",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#D4F071"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.subme.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#D4F071"
+      },
+      "package": "com.subme.app",
+      "permissions": [
+        "android.permission.READ_SMS",
+        "android.permission.RECEIVE_SMS",
+        "android.permission.READ_CONTACTS"
+      ]
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-web-browser"
+    ]
+  }
+}

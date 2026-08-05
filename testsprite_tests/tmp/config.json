@@ -1,0 +1,17 @@
+{
+  "status": "commited",
+  "type": "frontend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:5000",
+  "executionArgs": {
+    "projectName": "SubKo-main",
+    "projectPath": "C:\\Users\\KITS\\Downloads\\SubKo-main",
+    "testIds": [],
+    "additionalInstruction": "This is a React Native Expo WEB build served as a single-page app on localhost:5000 with client-side navigation (NO real URL routes). The app loads at / showing the Welcome screen with \"Get Started\" and \"Login\" buttons. Login credentials: email admin@subko.app, password from ADMIN_PASSWORD env. Admin login authenticates via POST /api/auth/login and lands on the home feed. The database is empty (no tasks/submissions/payments), so data-dependent tests will find nothing to act on - treat as a setup limitation, not a bug.",
+    "serverMode": "production",
+    "envs": {
+      "API_KEY": "sk-user-sEWRFaxcAx1dOV_3KfRLOddsnPloP_UR1MooZXTP0RPJNrVVC96md9SP7nVVQ2JWZ9Vi8dgnSTkubwuabBwx3nZvDLzhLUarsnKjoJvebgetT-XDsz0SdS6C1P4LlmDspxA"
+    }
+  },
+  "serverPort": 50722
+}

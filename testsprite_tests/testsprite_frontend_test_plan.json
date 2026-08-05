@@ -1,0 +1,1820 @@
+[
+  {
+    "id": "TC001",
+    "title": "Log in and reach the authenticated home feed",
+    "description": "This verifies that a returning member can sign in and land on the authenticated home task feed.",
+    "category": "User Login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign in form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the authenticated home feed is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify task cards are visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC002",
+    "title": "Enter the admin workspace from profile",
+    "description": "An admin can switch from the profile area into the admin workspace and reach the dashboard tabs.",
+    "category": "Admin Panel",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the profile screen"
+      },
+      {
+        "type": "action",
+        "description": "Switch to the admin panel"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the admin dashboard tabs are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC003",
+    "title": "Open the home task feed after login",
+    "description": "This test verifies that a signed-in user can reach the home feed and see the balance and available tasks.",
+    "category": "Home Task Feed",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the home task feed is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the wallet balance and task list are visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC004",
+    "title": "Complete a video task and claim points",
+    "description": "A returning user can finish a rewarded video task, submit proof with an MCQ answer, and receive a successful submission outcome.",
+    "category": "Task Execution & Submission",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open a task from the home feed"
+      },
+      {
+        "type": "action",
+        "description": "Start the task session"
+      },
+      {
+        "type": "action",
+        "description": "Provide screenshot proof"
+      },
+      {
+        "type": "action",
+        "description": "Select an MCQ answer"
+      },
+      {
+        "type": "action",
+        "description": "Submit the task"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a successful submission confirmation is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the wallet transaction history reflects the earned points"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC005",
+    "title": "Access the banned account lock screen",
+    "description": "A banned user can view the locked account screen and see the restricted state clearly.",
+    "category": "Banned Lock Screen",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the banned account screen"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the locked account message is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify logout and support actions are available"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC006",
+    "title": "Sign up with an optional referral code",
+    "description": "This verifies that a new creator can create an account with username, email, password, and referral code and receive account creation confirmation.",
+    "category": "User Signup",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the primary action to get started"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with a new creator name"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with a new unique email address"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with a valid password"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the optional referral code field with a referral code"
+      },
+      {
+        "type": "action",
+        "description": "Submit the account creation form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an account creation confirmation is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the signup flow completes successfully"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC007",
+    "title": "Log out from profile",
+    "description": "A logged-in user can log out from the profile screen and return to the unauthenticated entry state.",
+    "category": "Profile & Settings",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the profile tab"
+      },
+      {
+        "type": "action",
+        "description": "Log out from the account"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the welcome screen is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify authenticated navigation is no longer visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC008",
+    "title": "Submit a manual UPI top-up request",
+    "description": "A user can submit a manual UPI top-up with a valid amount, UTR, and screenshot and see it marked pending.",
+    "category": "Wallet & UPI Top-up",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open Wallet"
+      },
+      {
+        "type": "action",
+        "description": "Start a manual top-up request"
+      },
+      {
+        "type": "action",
+        "description": "Fill a valid amount into the top-up amount field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the UTR or transaction ID field"
+      },
+      {
+        "type": "action",
+        "description": "Provide payment screenshot proof"
+      },
+      {
+        "type": "action",
+        "description": "Confirm the top-up request"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the payment is marked pending"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the top-up appears in wallet activity"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC009",
+    "title": "Log out from the banned screen",
+    "description": "A banned user can log out from the lock screen and return to the unauthenticated state.",
+    "category": "Banned Lock Screen",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the banned account screen"
+      },
+      {
+        "type": "action",
+        "description": "Log out from the locked account screen"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the unauthenticated welcome screen is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC010",
+    "title": "Finish the task watch step before proof submission",
+    "description": "A user can complete the required watch or reel step and continue to proof submission after the timer finishes.",
+    "category": "Task Execution & Submission",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open a task from the home feed"
+      },
+      {
+        "type": "action",
+        "description": "Start the task session"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the task timer to complete"
+      },
+      {
+        "type": "action",
+        "description": "Continue to the proof submission step"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the proof submission screen is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the task can proceed only after the watch requirement is completed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC011",
+    "title": "Create a promotion request with links and MCQ",
+    "description": "A user can spend BUG's to create a promotion request by selecting a platform and tier, entering links, building an MCQ, and confirming submission.",
+    "category": "Promotion Request",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open Promote"
+      },
+      {
+        "type": "action",
+        "description": "Select a platform"
+      },
+      {
+        "type": "action",
+        "description": "Select a promotion tier"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the channel link field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the video link field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the MCQ question field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the MCQ answer options"
+      },
+      {
+        "type": "action",
+        "description": "Mark the correct MCQ answer"
+      },
+      {
+        "type": "action",
+        "description": "Confirm the promotion request"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the promotion request is submitted"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the promotion appears in the user's requested items"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC012",
+    "title": "Open a standard task from the home feed",
+    "description": "This test verifies that a signed-in user can open a standard task card from the home feed and reach task execution.",
+    "category": "Home Task Feed",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open a standard task from the feed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the task execution screen is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify task details are visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC013",
+    "title": "Browse the task feed and open a task",
+    "description": "A logged-in user can view the home task feed and open an available task card.",
+    "category": "Task Execution & Submission",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "View the home task feed"
+      },
+      {
+        "type": "action",
+        "description": "Open a standard task card"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the task details screen is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify task information is visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC014",
+    "title": "View wallet balance and transaction history",
+    "description": "A logged-in user can open Wallet and see their current BUG balance with transaction activity.",
+    "category": "Wallet & UPI Top-up",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open Wallet"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the wallet balance is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify transaction history is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC015",
+    "title": "Update username in profile settings",
+    "description": "A user can change their username in profile settings and see the updated name reflected afterward.",
+    "category": "Profile & Settings",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the profile tab"
+      },
+      {
+        "type": "action",
+        "description": "Open profile settings"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the username field with CreatorAlpha"
+      },
+      {
+        "type": "action",
+        "description": "Save the profile changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated username is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the profile remains accessible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC016",
+    "title": "Open a VIP task from the home banner",
+    "description": "This test verifies that a signed-in user can open a VIP task from the home banner and reach task execution.",
+    "category": "Home Task Feed",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the VIP task banner"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the task execution screen is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify VIP task details are visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC017",
+    "title": "Show referral code and sharing options",
+    "description": "A logged-in user can open Referrals and view their referral code, sharing controls, and referral stats.",
+    "category": "Referral Sharing & Stats",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open Referrals"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the referral code is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify referral stats are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC018",
+    "title": "Refresh wallet activity",
+    "description": "A logged-in user can refresh Wallet and see updated balance or transaction activity after a pull-to-refresh interaction.",
+    "category": "Wallet & UPI Top-up",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open Wallet"
+      },
+      {
+        "type": "action",
+        "description": "Pull to refresh the wallet view"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify refreshed wallet activity is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the wallet remains usable after refresh"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC019",
+    "title": "Search for a user and change their status",
+    "description": "An admin can find a user and ban or unban them from the user management screen.",
+    "category": "Admin Panel",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the admin users screen"
+      },
+      {
+        "type": "action",
+        "description": "Search for a user"
+      },
+      {
+        "type": "action",
+        "description": "Change the user's status"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated user status is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC020",
+    "title": "Moderate a pending submission or promotion",
+    "description": "An admin can review a pending item and approve or reject it with the result recorded in the moderation workspace.",
+    "category": "Admin Panel",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the admin reviews screen"
+      },
+      {
+        "type": "action",
+        "description": "Review a pending item"
+      },
+      {
+        "type": "action",
+        "description": "Approve or reject the item"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the moderation result is recorded"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC021",
+    "title": "Edit username and avatar preferences",
+    "description": "A logged-in user can update their profile username or avatar settings and see the changes reflected in Profile.",
+    "category": "Profile Management",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open Profile"
+      },
+      {
+        "type": "action",
+        "description": "Start editing the profile"
+      },
+      {
+        "type": "action",
+        "description": "Fill in a new username"
+      },
+      {
+        "type": "action",
+        "description": "Change the avatar selection"
+      },
+      {
+        "type": "action",
+        "description": "Save the profile changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated profile details are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the profile edit was saved"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC022",
+    "title": "View referral code and stats",
+    "description": "A user can open the referral area and see their referral code, referral link, and performance stats displayed.",
+    "category": "Referral",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the referral tab"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the referral code is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify referral statistics are displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC023",
+    "title": "View admin analytics and export a report",
+    "description": "An admin can view analytics metrics and export the report from the analytics workspace.",
+    "category": "Admin Panel",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the admin analytics screen"
+      },
+      {
+        "type": "action",
+        "description": "Export the analytics report"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify analytics metrics are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the exported report is available"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC024",
+    "title": "Credit BUG's to a user from admin",
+    "description": "An admin can credit BUG's to a user and see the updated balance in the admin workspace.",
+    "category": "Admin Panel",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the admin users screen"
+      },
+      {
+        "type": "action",
+        "description": "Search for a user"
+      },
+      {
+        "type": "action",
+        "description": "Credit BUG's to the user"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user's balance is updated"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC025",
+    "title": "View submitted proofs and report a user",
+    "description": "A user can open their proof history, inspect a proof entry, and submit a user report from that proof.",
+    "category": "My Proofs History",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the My Proofs tab"
+      },
+      {
+        "type": "action",
+        "description": "Open a proof entry"
+      },
+      {
+        "type": "action",
+        "description": "Submit a report for the user from the proof"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the proof history remains visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the report action is reflected in the interface"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC026",
+    "title": "Review and decide a pending payment",
+    "description": "An admin can open pending payments and approve or reject a payment so its status updates in the workspace.",
+    "category": "Admin Panel",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the admin payments screen"
+      },
+      {
+        "type": "action",
+        "description": "Review a pending payment"
+      },
+      {
+        "type": "action",
+        "description": "Approve or reject the payment"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the payment status is updated"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC027",
+    "title": "Refresh the home feed to see updated tasks",
+    "description": "This test verifies that a signed-in user can refresh the home feed and see the task list update.",
+    "category": "Home Task Feed",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Refresh the task feed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated task list is visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC028",
+    "title": "Toggle push notification preference",
+    "description": "A user can change the push notification preference in profile settings and see the preference take effect.",
+    "category": "Profile & Settings",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the profile tab"
+      },
+      {
+        "type": "action",
+        "description": "Toggle the push notification preference"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the push notification preference change is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify profile settings remain accessible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC029",
+    "title": "Create and manage a task in admin tools",
+    "description": "An admin can create a task and then toggle or delete it from the tools workspace.",
+    "category": "Admin Panel",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the admin tools screen"
+      },
+      {
+        "type": "action",
+        "description": "Create a task"
+      },
+      {
+        "type": "action",
+        "description": "Toggle or delete the task"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the task list is updated"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC030",
+    "title": "Start signup from the landing screen",
+    "description": "This verifies that a new user can begin account creation from the landing page and reach the signup screen.",
+    "category": "Welcome Navigation",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the primary action to get started"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the signup screen is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC031",
+    "title": "Start login from the landing screen",
+    "description": "This verifies that a returning user can begin sign-in from the landing page and reach the login screen.",
+    "category": "Welcome Navigation",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the login entry point"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the login screen is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC032",
+    "title": "Prevent submission when proof is missing",
+    "description": "A user who tries to submit a task without proof sees a validation error and cannot complete submission.",
+    "category": "Task Execution & Submission",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open a task from the home feed"
+      },
+      {
+        "type": "action",
+        "description": "Start the task session"
+      },
+      {
+        "type": "action",
+        "description": "Select an MCQ answer"
+      },
+      {
+        "type": "action",
+        "description": "Submit the task"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a proof validation error is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the task is not submitted"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC033",
+    "title": "Copy referral code",
+    "description": "A user can copy their referral code from the referral screen and receive visible confirmation that it was copied.",
+    "category": "Referral",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the referral tab"
+      },
+      {
+        "type": "action",
+        "description": "Click the copy control for the referral code"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a copy confirmation is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the referral code remains visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC034",
+    "title": "Upload a new profile avatar",
+    "description": "A user can choose a new profile image from profile settings and see the avatar updated on the profile screen.",
+    "category": "Profile & Settings",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the profile tab"
+      },
+      {
+        "type": "action",
+        "description": "Open the avatar picker"
+      },
+      {
+        "type": "action",
+        "description": "Choose a new profile image"
+      },
+      {
+        "type": "action",
+        "description": "Save the profile image change"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated avatar is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the profile screen remains visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC035",
+    "title": "Prevent submission when the MCQ is unanswered",
+    "description": "A user who submits a task with proof but no selected answer sees a validation error and cannot complete submission.",
+    "category": "Task Execution & Submission",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open a task from the home feed"
+      },
+      {
+        "type": "action",
+        "description": "Start the task session"
+      },
+      {
+        "type": "action",
+        "description": "Provide screenshot proof"
+      },
+      {
+        "type": "action",
+        "description": "Submit the task"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an MCQ validation error is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the task is not submitted"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC036",
+    "title": "Open support from the banned screen",
+    "description": "A banned user can open the support contact link from the lock screen.",
+    "category": "Banned Lock Screen",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the banned account screen"
+      },
+      {
+        "type": "action",
+        "description": "Open the support contact link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a support contact destination is opened"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC037",
+    "title": "Refresh referral statistics",
+    "description": "A user can refresh the referral stats view and see the stats remain available after the refresh completes.",
+    "category": "Referral",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the referral tab"
+      },
+      {
+        "type": "action",
+        "description": "Pull to refresh the referral stats view"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify referral statistics are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the refreshed referral view remains populated"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC038",
+    "title": "View recent operational logs",
+    "description": "An admin can open the system logs and review recent operational activity.",
+    "category": "Admin Panel",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the system logs screen"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify recent operational activity is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC039",
+    "title": "Warn when promotion balance is insufficient",
+    "description": "A user trying to request a promotion without enough BUG's sees a validation error and cannot confirm the request.",
+    "category": "Promotion Request",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open Promote"
+      },
+      {
+        "type": "action",
+        "description": "Select a premium promotion tier"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the channel link field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the video link field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the MCQ question field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the MCQ answer options"
+      },
+      {
+        "type": "action",
+        "description": "Mark the correct MCQ answer"
+      },
+      {
+        "type": "action",
+        "description": "Confirm the promotion request"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an insufficient balance error is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the promotion request is not created"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC040",
+    "title": "Set a new password from a recovery session",
+    "description": "This test verifies that a user in the recovery flow can set a valid new password and see the password update confirmed.",
+    "category": "Reset Password",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the password reset screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the new password field with a valid password"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the confirm password field with the same valid password"
+      },
+      {
+        "type": "action",
+        "description": "Submit the password update"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a password update confirmation is visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC041",
+    "title": "Show an error for invalid login credentials",
+    "description": "This verifies that a user sees a login error when entering incorrect credentials and is not signed in.",
+    "category": "User Login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with a valid email format"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with an invalid password"
+      },
+      {
+        "type": "action",
+        "description": "Submit the sign in form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a login error message is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the authenticated home feed is not displayed"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC042",
+    "title": "Request a password reset email",
+    "description": "This test verifies that a user can request a password reset link for a registered email and see confirmation that the reset email was sent.",
+    "category": "Forgot Password",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the forgot password screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the reset request"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a confirmation view for sending the reset email is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a way to return to login is visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC043",
+    "title": "Block an invalid top-up amount",
+    "description": "A user entering a top-up amount below the minimum sees a validation error and cannot submit the request.",
+    "category": "Wallet & UPI Top-up",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open Wallet"
+      },
+      {
+        "type": "action",
+        "description": "Start a manual top-up request"
+      },
+      {
+        "type": "action",
+        "description": "Fill an amount below the minimum into the top-up amount field"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the UTR or transaction ID field"
+      },
+      {
+        "type": "action",
+        "description": "Provide payment screenshot proof"
+      },
+      {
+        "type": "action",
+        "description": "Confirm the top-up request"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a top-up validation error is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the request is not submitted"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC044",
+    "title": "Open password reset request from login",
+    "description": "This verifies that a user can move from login to the password reset request screen when they need to recover access.",
+    "category": "User Login",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Click the password recovery entry point"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the password reset request screen is displayed"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC045",
+    "title": "Reject mismatched or too-short reset passwords",
+    "description": "This test verifies that the reset password form blocks invalid passwords and shows validation feedback.",
+    "category": "Reset Password",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the password reset screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the new password field with a short password"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the confirm password field with a different password"
+      },
+      {
+        "type": "action",
+        "description": "Submit the password update"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a password validation error is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the password update confirmation is not visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC046",
+    "title": "Return to login from password reset request",
+    "description": "This test verifies that a user can back out of the forgot password flow and return to the login screen.",
+    "category": "Forgot Password",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the forgot password screen"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the reset request"
+      },
+      {
+        "type": "action",
+        "description": "Return to the login screen"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the login screen is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the password reset confirmation is no longer visible"
+      }
+    ],
+    "priority": "Low"
+  }
+]
