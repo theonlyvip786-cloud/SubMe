@@ -91,6 +91,15 @@ app.use('/api', (err, req, res, next) => {
     res.status(500).json({ error: 'Internal server error' });
 });
 
+// Health Check
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        success: true,
+        status: 'ok',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Serve static frontend build (must come AFTER /api routes).
 app.use(express.static(path.join(__dirname, '../../mobile-app/dist')));
 
