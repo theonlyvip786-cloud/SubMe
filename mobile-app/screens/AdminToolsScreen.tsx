@@ -27,7 +27,12 @@ export default function AdminToolsScreen({ navigation, route }: any) {
 
     // Sub-tab segment controls
     const [reviewSubTab, setReviewSubTab] = useState<'submissions' | 'promotions'>('submissions');
-    const [toolsSubTab, setToolsSubTab] = useState<'menu' | 'create' | 'manage' | 'credit' | 'logs'>('create');
+    const [toolsSubTab, setToolsSubTab] = useState<'create' | 'manage' | 'credit' | 'logs' | 'upi'>('create');
+
+    const [upiPayeeName, setUpiPayeeName] = useState('SubMe Admin');
+    const [upiHandles, setUpiHandles] = useState<string[]>(['subkaro@axl', 'subkaro@ybl', 'subkaro@ibl']);
+    const [newHandleInput, setNewHandleInput] = useState('');
+    const [savingUpi, setSavingUpi] = useState(false);
 
     const [stats, setStats] = useState({ totalUsers: 0, pendingSubmissions: 0, pendingPayments: 0, totalPoints: 0 });
     const [analyticsData, setAnalyticsData] = useState<any>(null);
@@ -80,6 +85,44 @@ export default function AdminToolsScreen({ navigation, route }: any) {
         if (tab === 'tools') {
             if (toolsSubTab === 'manage') await fetchAllTasks(silent);
             if (toolsSubTab === 'logs') await fetchLogs(silent);
+            if (toolsSubTab === 'upi') await fetchUpiAdminConfig(silent);
+        }
+    };
+
+    const fetchUpiAdminConfig = async (silent = false) => {
+        if (!silent) setLoading(true);
+        try {
+            const res = await axios.get(`${API_URL}/api/payments/upi-config`);
+            if (res.data) {
+                setUpiPayeeName(res.data.name || 'SubMe Admin');
+                if (Array.isArray(res.data.handles) && res.data.handles.length > 0) {
+                    setUpiHandles(res.data.handles);
+                }
+            }
+        } catch (e) { console.error(e); }
+        finally { if (!silent) setLoading(false); }
+    };
+
+    const handleSaveUpiConfig = async () => {
+        if (!upiPayeeName.trim()) {
+            return Alert.alert('Error', 'Please enter a payee name.');
+        }
+        if (upiHandles.length === 0) {
+            return Alert.alert('Error', 'At least one UPI ID is required.');
+        }
+
+        setSavingUpi(true);
+        try {
+            const res = await axios.post(`${API_URL}/api/admin/upi-config`, {
+                name: upiPayeeName.trim(),
+                handles: upiHandles,
+            }, { headers: { Authorization: `Bearer ${token}` } });
+
+            Alert.alert('Success 🎉', res.data.message || 'UPI settings updated live!');
+        } catch (err: any) {
+            Alert.alert('Save Failed', err.response?.data?.error || err.message);
+        } finally {
+            setSavingUpi(false);
         }
     };
 
@@ -619,6 +662,7 @@ export default function AdminToolsScreen({ navigation, route }: any) {
                                     { key: 'create', label: 'Create Task' },
                                     { key: 'manage', label: 'Manage Tasks' },
                                     { key: 'credit', label: 'Credit User' },
+                                    { key: 'upi', label: 'UPI Setup' },
                                     { key: 'logs', label: 'Audit Logs' },
                                 ] as const).map(({ key, label }) => (
                                     <TouchableOpacity
@@ -937,6 +981,113 @@ export default function AdminToolsScreen({ navigation, route }: any) {
                                     )) : (
                                         <Text style={styles.emptyText}>No logs found</Text>
                                     )}
+                                </View>
+                            )}
+
+                            {/* UPI Handles Setup View */}
+                            {toolsSubTab === 'upi' && (
+                                <View style={styles.creditFormCard}>
+                                    <Text style={styles.formTitle}>Manage Wallet UPI Handles</Text>
+                                    <Text style={[styles.cardUser, { marginBottom: spacing[4] }]}>
+                                        Update the payee name & list of active UPI IDs displayed to users on the Wallet screen.
+                                    </Text>
+
+                                    <Text style={styles.inputLabel}>Payee / Display Name</Text>
+                                    <InputBox style={{ marginBottom: spacing[4] }}>
+                                        <AppTextInput
+                                            variant="flat"
+                                            value={upiPayeeName}
+                                            onChangeText={setUpiPayeeName}
+                                            placeholder="e.g. SubMe Admin"
+                                        />
+                                    </InputBox>
+
+                                    <Text style={styles.inputLabel}>Active UPI IDs</Text>
+                                    <View style={{ gap: spacing[2], marginBottom: spacing[4] }}>
+                                        {upiHandles.map((handle, index) => (
+                                            <View key={index} style={{
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                backgroundColor: colors.bgPrimary,
+                                                paddingHorizontal: spacing[3],
+                                                paddingVertical: spacing[2.5],
+                                                borderRadius: radii.md,
+                                                borderWidth: 1,
+                                                borderColor: colors.border
+                                            }}>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[2] }}>
+                                                    <Ionicons name="qr-code-outline" size={16} color={colors.black} />
+                                                    <Text style={{ fontFamily, fontSize: 14, fontWeight: '700', color: colors.black }}>
+                                                        {handle}
+                                                    </Text>
+                                                </View>
+
+                                                <TouchableOpacity
+                                                    onPress={() => {
+                                                        const updated = upiHandles.filter((_, i) => i !== index);
+                                                        setUpiHandles(updated);
+                                                    }}
+                                                    style={{ padding: 4 }}
+                                                >
+                                                    <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                                                </TouchableOpacity>
+                                            </View>
+                                        ))}
+                                    </View>
+
+                                    {/* Add New Handle */}
+                                    <Text style={styles.inputLabel}>Add New UPI ID</Text>
+                                    <View style={{ flexDirection: 'row', gap: spacing[2], marginBottom: spacing[5] }}>
+                                        <InputBox style={{ flex: 1 }}>
+                                            <AppTextInput
+                                                variant="flat"
+                                                value={newHandleInput}
+                                                onChangeText={setNewHandleInput}
+                                                placeholder="e.g. subkaro@axl"
+                                                autoCapitalize="none"
+                                            />
+                                        </InputBox>
+
+                                        <TouchableOpacity
+                                            style={{
+                                                backgroundColor: colors.lime,
+                                                paddingHorizontal: spacing[4],
+                                                borderRadius: radii.md,
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                                ...shadows.sm
+                                            }}
+                                            onPress={() => {
+                                                const cleaned = newHandleInput.trim().toLowerCase();
+                                                if (!cleaned || !cleaned.includes('@')) {
+                                                    return Alert.alert('Invalid UPI', 'Please enter a valid handle like name@upi');
+                                                }
+                                                if (upiHandles.includes(cleaned)) {
+                                                    return Alert.alert('Duplicate', 'This UPI handle is already added.');
+                                                }
+                                                setUpiHandles([...upiHandles, cleaned]);
+                                                setNewHandleInput('');
+                                            }}
+                                        >
+                                            <Ionicons name="add-circle-outline" size={20} color={colors.black} />
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    <AnimatedPressable
+                                        style={[styles.actionSubmitBtn, { backgroundColor: colors.lime }, savingUpi && { opacity: 0.7 }]}
+                                        onPress={handleSaveUpiConfig}
+                                        disabled={savingUpi}
+                                    >
+                                        {savingUpi ? (
+                                            <ActivityIndicator color={colors.black} />
+                                        ) : (
+                                            <>
+                                                <Ionicons name="save-outline" size={18} color={colors.black} />
+                                                <Text style={[styles.actionSubmitText, { color: colors.black }]}>Save & Update Live Wallet</Text>
+                                            </>
+                                        )}
+                                    </AnimatedPressable>
                                 </View>
                             )}
 

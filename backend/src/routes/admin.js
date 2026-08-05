@@ -477,5 +477,47 @@ router.get('/logs', asyncHandler(async (req, res) => {
     res.json(data);
 }));
 
+// POST /api/admin/upi-config — update active UPI handles & payee name
+router.post('/upi-config', asyncHandler(async (req, res) => {
+    const { name, handles } = req.body;
+    if (!name || !name.trim()) {
+        return res.status(400).json({ error: 'Payee name is required.' });
+    }
+    if (!Array.isArray(handles) || handles.length === 0) {
+        return res.status(400).json({ error: 'At least one UPI handle is required.' });
+    }
+
+    const cleanHandles = handles
+        .map(h => String(h).trim().toLowerCase())
+        .filter(h => h.length > 0 && h.includes('@'));
+
+    if (cleanHandles.length === 0) {
+        return res.status(400).json({ error: 'Please enter valid UPI IDs (e.g. name@upi).' });
+    }
+
+    const newConfig = {
+        name: name.trim(),
+        handles: cleanHandles,
+    };
+
+    const { error } = await supabase
+        .from('system_settings')
+        .upsert({
+            key: 'upi_config',
+            value: newConfig,
+            updated_at: new Date().toISOString(),
+        });
+
+    if (error) throw error;
+
+    await supabase.from('logs').insert([{
+        user_id: req.user.id,
+        action: `Admin updated UPI handles: ${cleanHandles.join(', ')} | Payee: ${name}`,
+        ip_address: req.ip,
+    }]);
+
+    res.json({ message: 'UPI settings updated successfully!', config: newConfig });
+}));
+
 module.exports = router;
 

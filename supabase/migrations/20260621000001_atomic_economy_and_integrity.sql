@@ -497,3 +497,15 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;
 
+-- Dynamic system_settings table for admin configurations
+CREATE TABLE IF NOT EXISTS system_settings (
+    key TEXT PRIMARY KEY,
+    value JSONB NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+INSERT INTO system_settings (key, value)
+VALUES ('upi_config', '{"name": "SubMe Admin", "handles": ["subkaro@axl", "subkaro@ybl", "subkaro@ibl"]}'::jsonb)
+ON CONFLICT (key) DO NOTHING;
+
+

@@ -624,3 +624,16 @@ DO $$ BEGIN
     ALTER TABLE submissions ALTER COLUMN screenshot_url DROP NOT NULL;
 EXCEPTION WHEN undefined_column THEN NULL;
 END $$;
+
+-- ── SYSTEM SETTINGS TABLE (Dynamic app configurations e.g. UPI handles) ───
+CREATE TABLE IF NOT EXISTS system_settings (
+    key TEXT PRIMARY KEY,
+    value JSONB NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Seed default UPI config if not present
+INSERT INTO system_settings (key, value)
+VALUES ('upi_config', '{"name": "SubMe Admin", "handles": ["subkaro@axl", "subkaro@ybl", "subkaro@ibl"]}'::jsonb)
+ON CONFLICT (key) DO NOTHING;
+

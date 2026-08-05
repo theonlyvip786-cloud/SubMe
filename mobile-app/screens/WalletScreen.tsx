@@ -31,12 +31,12 @@ import PaymentPermissionModal, {
 // ─────────────────────────────────────────────────────────────────────────────
 const CASHFREE_ENABLED = false;
 
-const UPI_IDS = [
+const DEFAULT_UPI_IDS = [
   'subkaro@axl',
   'subkaro@ybl',
   'subkaro@ibl',
 ];
-const UPI_NAME = 'SubMe Admin';
+const DEFAULT_UPI_NAME = 'SubMe Admin';
 
 // ── Pending Payment Banner ───────────────────────────────────────────────────
 function PendingPaymentBanner({ count }: { count: number }) {
@@ -410,14 +410,34 @@ export default function WalletScreen({ navigation }: any) {
     };
   }, []);
 
+  const [upiConfig, setUpiConfig] = useState<{ name: string; handles: string[] }>({
+    name: DEFAULT_UPI_NAME,
+    handles: DEFAULT_UPI_IDS,
+  });
   const [selectedUpiIndex, setSelectedUpiIndex] = useState(0);
-  const selectedUpiId = UPI_IDS[selectedUpiIndex] || UPI_IDS[0];
+
+  const fetchUpiConfig = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/payments/upi-config`);
+      if (res.data && Array.isArray(res.data.handles) && res.data.handles.length > 0) {
+        setUpiConfig({
+          name: res.data.name || DEFAULT_UPI_NAME,
+          handles: res.data.handles,
+        });
+      }
+    } catch {
+      /* fallback to defaults */
+    }
+  }, []);
+
+  const handlesList = upiConfig.handles.length > 0 ? upiConfig.handles : DEFAULT_UPI_IDS;
+  const selectedUpiId = handlesList[selectedUpiIndex] || handlesList[0];
 
   // Ref so the AppState listener always sees the current amount without re-subscribing
   const purchaseAmountRef = useRef(purchaseAmount);
   useEffect(() => { purchaseAmountRef.current = purchaseAmount; }, [purchaseAmount]);
 
-  const upiUrl = `upi://pay?pa=${selectedUpiId}&pn=${encodeURIComponent(UPI_NAME)}&am=${purchaseAmount}&cu=INR`;
+  const upiUrl = `upi://pay?pa=${selectedUpiId}&pn=${encodeURIComponent(upiConfig.name)}&am=${purchaseAmount}&cu=INR`;
 
   const fetchTransactions = useCallback(async () => {
     try {
@@ -526,7 +546,7 @@ export default function WalletScreen({ navigation }: any) {
       });
       updateUser({ points: res.data.points });
     } catch { /* ignore */ }
-    await fetchTransactions();
+    await Promise.all([fetchTransactions(), fetchUpiConfig()]);
     if (!silent) setRefreshing(false);
   };
 
@@ -536,13 +556,15 @@ export default function WalletScreen({ navigation }: any) {
       if (shouldShow) setShowPermModal(true);
     };
     refreshAll(true);
+    fetchUpiConfig();
     checkPerms();
     const unsub = navigation.addListener('focus', async () => {
       refreshAll(true);
+      fetchUpiConfig();
       checkPerms();
     });
     return unsub;
-  }, [navigation, token]);
+  }, [navigation, token, fetchUpiConfig]);
 
   // ── AppState Listener: detect when user returns from UPI app ────────────────
   useEffect(() => {
@@ -944,7 +966,7 @@ export default function WalletScreen({ navigation }: any) {
             Tap a handle to select it for instant payment, or click copy to pay manually:
           </Text>
 
-          {UPI_IDS.map((handle, idx) => {
+          {handlesList.map((handle, idx) => {
             const isSelected = idx === selectedUpiIndex;
             return (
               <TouchableOpacity

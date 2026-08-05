@@ -462,4 +462,35 @@ router.post('/auto-verify', apiLimiter, authMiddleware, asyncHandler(async (req,
     });
 }));
 
+// GET /api/payments/upi-config
+// Returns active UPI handles and payee name. Dynamically updated by admin.
+router.get('/upi-config', asyncHandler(async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('system_settings')
+            .select('value')
+            .eq('key', 'upi_config')
+            .maybeSingle();
+
+        if (error || !data || !data.value) {
+            return res.json({
+                name: 'SubMe Admin',
+                handles: ['subkaro@axl', 'subkaro@ybl', 'subkaro@ibl']
+            });
+        }
+
+        res.json({
+            name: data.value.name || 'SubMe Admin',
+            handles: Array.isArray(data.value.handles) && data.value.handles.length > 0
+                ? data.value.handles
+                : ['subkaro@axl', 'subkaro@ybl', 'subkaro@ibl']
+        });
+    } catch (_) {
+        res.json({
+            name: 'SubMe Admin',
+            handles: ['subkaro@axl', 'subkaro@ybl', 'subkaro@ibl']
+        });
+    }
+}));
+
 module.exports = router;
