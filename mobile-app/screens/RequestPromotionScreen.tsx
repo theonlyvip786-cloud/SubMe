@@ -310,9 +310,6 @@ export default function RequestPromotionScreen({ navigation }: any) {
                                             <View style={styles.tierTextGroup}>
                                                 <View style={styles.tierTitleRow}>
                                                     <Text style={styles.tierTitleVip}>VIP Banner Placement</Text>
-                                                    <View style={styles.vipTag}>
-                                                        <Text style={styles.vipTagText}>TOP BANNER</Text>
-                                                    </View>
                                                 </View>
                                                 <Text style={styles.tierDescVip}>Top auto-sliding home banner placement</Text>
                                             </View>
@@ -332,7 +329,8 @@ export default function RequestPromotionScreen({ navigation }: any) {
                                     <AppTextInput
                                         variant="flat"
                                         style={styles.input}
-                                        placeholder={platform === 'youtube' ? "https://www.youtube.com/@yourchannel" : "https://www.instagram.com/yourprofile"}
+                                        numberOfLines={1}
+                                        placeholder={platform === 'youtube' ? "youtube.com/@yourchannel" : "instagram.com/yourprofile"}
                                         value={channelLink}
                                         onChangeText={setChannelLink}
                                         autoCapitalize="none"
@@ -348,7 +346,8 @@ export default function RequestPromotionScreen({ navigation }: any) {
                                             <AppTextInput
                                                 variant="flat"
                                                 style={styles.input}
-                                                placeholder="https://www.youtube.com/watch?v=..."
+                                                numberOfLines={1}
+                                                placeholder="youtube.com/watch?v=..."
                                                 value={videoLink}
                                                 onChangeText={setVideoLink}
                                                 autoCapitalize="none"

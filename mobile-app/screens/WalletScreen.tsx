@@ -949,13 +949,13 @@ export default function WalletScreen({ navigation }: any) {
 
         {/* ─── UPI Handle Selector & Copy Box ──────────────────────── */}
         <View style={styles.upiCardContainer}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-            <View style={styles.upiCardHeader}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
+            <View style={[styles.upiCardHeader, { flex: 1, minWidth: 140 }]}>
               <Ionicons name="qr-code-outline" size={18} color={colors.black} />
-              <Text style={styles.upiCardTitle}>Select or Copy Pay Handle</Text>
+              <Text style={styles.upiCardTitle} numberOfLines={1}>Select Pay Handle</Text>
             </View>
             <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.lime, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.lime, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}
               onPress={() => setShowPermModal(true)}
             >
               <Ionicons name="flash-outline" size={12} color={colors.black} />
