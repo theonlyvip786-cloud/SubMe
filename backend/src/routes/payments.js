@@ -475,7 +475,7 @@ router.get('/upi-config', asyncHandler(async (req, res) => {
         if (error || !data || !data.value) {
             return res.json({
                 name: 'SubMe Admin',
-                handles: ['subkaro@axl', 'subkaro@ybl', 'subkaro@ibl']
+                handles: ['theonlyvip786@okaxis']
             });
         }
 
@@ -483,12 +483,12 @@ router.get('/upi-config', asyncHandler(async (req, res) => {
             name: data.value.name || 'SubMe Admin',
             handles: Array.isArray(data.value.handles) && data.value.handles.length > 0
                 ? data.value.handles
-                : ['subkaro@axl', 'subkaro@ybl', 'subkaro@ibl']
+                : ['theonlyvip786@okaxis']
         });
     } catch (_) {
         res.json({
             name: 'SubMe Admin',
-            handles: ['subkaro@axl', 'subkaro@ybl', 'subkaro@ibl']
+            handles: ['theonlyvip786@okaxis']
         });
     }
 }));

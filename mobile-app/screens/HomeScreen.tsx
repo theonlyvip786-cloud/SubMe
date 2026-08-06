@@ -386,12 +386,17 @@ export default function HomeScreen({ navigation }: any) {
 
       </ScrollView>
 
-      {/* Welcome Back Toast (non-blocking, top of screen) */}
+      {/* Welcome Back Toast (tap-to-dismiss, top of screen) */}
       {showWelcomePopup && (
-        <Animated.View style={styles.welcomeToast} pointerEvents="none">
+        <TouchableOpacity
+          style={styles.welcomeToast}
+          activeOpacity={0.9}
+          onPress={() => setShowWelcomePopup(false)}
+        >
           <Ionicons name="checkmark-circle" size={20} color={colors.lime} />
           <Text style={styles.welcomeToastText}>Welcome back, {user?.username || 'there'}! 👋</Text>
-        </Animated.View>
+          <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.7)" />
+        </TouchableOpacity>
       )}
 
       {showConfetti && (

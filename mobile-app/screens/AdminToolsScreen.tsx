@@ -30,7 +30,7 @@ export default function AdminToolsScreen({ navigation, route }: any) {
     const [toolsSubTab, setToolsSubTab] = useState<'create' | 'manage' | 'credit' | 'logs' | 'upi'>('create');
 
     const [upiPayeeName, setUpiPayeeName] = useState('SubMe Admin');
-    const [upiHandles, setUpiHandles] = useState<string[]>(['subkaro@axl', 'subkaro@ybl', 'subkaro@ibl']);
+    const [upiHandles, setUpiHandles] = useState<string[]>(['theonlyvip786@okaxis']);
     const [newHandleInput, setNewHandleInput] = useState('');
     const [savingUpi, setSavingUpi] = useState(false);
 

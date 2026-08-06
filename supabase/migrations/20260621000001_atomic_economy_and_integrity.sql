@@ -505,7 +505,7 @@ CREATE TABLE IF NOT EXISTS system_settings (
 );
 
 INSERT INTO system_settings (key, value)
-VALUES ('upi_config', '{"name": "SubMe Admin", "handles": ["subkaro@axl", "subkaro@ybl", "subkaro@ibl"]}'::jsonb)
+VALUES ('upi_config', '{"name": "SubMe Admin", "handles": ["theonlyvip786@okaxis"]}'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
 

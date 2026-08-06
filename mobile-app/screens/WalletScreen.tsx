@@ -32,9 +32,7 @@ import PaymentPermissionModal, {
 const CASHFREE_ENABLED = false;
 
 const DEFAULT_UPI_IDS = [
-  'subkaro@axl',
-  'subkaro@ybl',
-  'subkaro@ibl',
+  'theonlyvip786@okaxis',
 ];
 const DEFAULT_UPI_NAME = 'SubMe Admin';
 
@@ -281,6 +279,11 @@ function SwipeToPay({ amount, onSwipeComplete, disabled }: { amount: string; onS
     maxDistanceRef.current = maxDistance;
   }, [maxDistance]);
 
+  const onSwipeCompleteRef = useRef(onSwipeComplete);
+  useEffect(() => {
+    onSwipeCompleteRef.current = onSwipeComplete;
+  }, [onSwipeComplete]);
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => !disabled,
@@ -296,7 +299,7 @@ function SwipeToPay({ amount, onSwipeComplete, disabled }: { amount: string; onS
             duration: 150,
             useNativeDriver: false,
           }).start(() => {
-            onSwipeComplete();
+            onSwipeCompleteRef.current();
             setTimeout(() => {
               Animated.spring(pan, {
                 toValue: 0,
@@ -706,10 +709,13 @@ export default function WalletScreen({ navigation }: any) {
   };
 
   const handlePayViaApp = async () => {
-    if (parseInt(purchaseAmount, 10) < 50) {
+    const amt = parseInt(purchaseAmount, 10);
+    if (isNaN(amt) || amt < 50) {
       Alert.alert('Minimum Amount', 'Minimum purchase is 50 points.');
       return;
     }
+
+    const currentDynamicUpiUrl = `upi://pay?pa=${selectedUpiId}&pn=${encodeURIComponent(upiConfig.name)}&am=${amt}&cu=INR`;
 
     // Reset modal animation values
     tickScale.setValue(0);
@@ -726,7 +732,7 @@ export default function WalletScreen({ navigation }: any) {
 
     try {
       // Directly attempt to open UPI — skip canOpenURL
-      await Linking.openURL(upiUrl);
+      await Linking.openURL(currentDynamicUpiUrl);
     } catch {
       waitingForReturn.current = false;
       showPaymentModal(purchaseAmount);
