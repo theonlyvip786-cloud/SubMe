@@ -1052,14 +1052,15 @@ const styles = StyleSheet.create({
     },
 
     textArea: {
-        backgroundColor: colors.white,
-        borderRadius: radii.lg,
-        padding: spacing[4.5],
-        height: 120,
+        flex: 1,
+        width: '100%',
+        height: 100,
         textAlignVertical: 'top',
-        ...shadows.sm,
         fontSize: 16,
         color: colors.textPrimary,
+        backgroundColor: 'transparent',
+        borderWidth: 0,
+        padding: 0,
     },
 
     optRow: {
