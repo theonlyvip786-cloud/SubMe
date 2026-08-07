@@ -351,15 +351,6 @@ router.post('/auto-verify', apiLimiter, authMiddleware, asyncHandler(async (req,
 
     const cleanUtr = utr_number.trim().toUpperCase();
 
-    // ── Freshness check: SMS must be within last 10 minutes ──────────────────
-    const isSuspicious = [];
-    if (sms_timestamp_ms) {
-        const ageMs = Date.now() - Number(sms_timestamp_ms);
-        if (ageMs > 10 * 60 * 1000) {
-            isSuspicious.push(`SMS is ${Math.round(ageMs / 60000)}min old (replay risk)`);
-        }
-    }
-
     // ── Duplicate UTR check ───────────────────────────────────────────────────
     const { data: existingPay, error: searchErr } = await supabase
         .from('payment_requests')
@@ -378,87 +369,36 @@ router.post('/auto-verify', apiLimiter, authMiddleware, asyncHandler(async (req,
         return res.status(400).json({ error: 'This UTR has already been submitted. Contact support if this is a mistake.' });
     }
 
-    const suspicious = isSuspicious.length > 0;
-    const autoApproveStatus = suspicious ? 'pending' : 'approved';
-
-    // ── Insert payment_request ────────────────────────────────────────────────
-    const { data: payRecord, error: insertErr } = await supabase
+    // ── SECURITY: Always set to pending — admin must approve.
+    // Client-supplied UTR/amount/SMS timestamp cannot be trusted as proof
+    // of a real payment. Instant credit based on client attestation only
+    // would allow any authenticated user to credit themselves arbitrary amounts.
+    // The SMS-detection UX still works; credit happens via admin approval.
+    const { error: insertErr } = await supabase
         .from('payment_requests')
         .insert([{
             user_id: req.user.id,
             amount: parsedAmount,
             utr_number: cleanUtr,
-            screenshot_url: null, // SMS-detected: no screenshot needed
+            screenshot_url: null,
             payment_method: 'upi_auto_sms',
-            status: autoApproveStatus,
-        }])
-        .select('id')
-        .single();
+            status: 'pending',
+        }]);
     if (insertErr) throw insertErr;
 
-    // ── If not suspicious → instant credit ───────────────────────────────────
-    if (!suspicious) {
-        const { error: creditErr } = await supabase.rpc('credit_points', {
-            user_uuid: req.user.id,
-            amount: parsedAmount,
-        });
-        if (creditErr) {
-            // Credit failed — fall back to pending so admin can manually approve
-            await supabase
-                .from('payment_requests')
-                .update({ status: 'pending' })
-                .eq('id', payRecord.id);
-
-            await supabase.from('logs').insert([{
-                user_id: req.user.id,
-                action: `AUTO_VERIFY_CREDIT_FAILED: UTR ${cleanUtr} | Amount: ${parsedAmount} — fallback to pending`,
-                ip_address: req.ip,
-                metadata: { utr: cleanUtr, amount: parsedAmount, error: creditErr.message },
-            }]);
-
-            return res.status(207).json({
-                message: 'Payment recorded! We\'re processing your credit — it may take a few minutes.',
-                auto_approved: false,
-                pending: true,
-            });
-        }
-
-        // ── Immutable transaction ledger entry ────────────────────────────────
-        await supabase.from('transactions').insert([{
-            user_id: req.user.id,
-            type: 'topup',
-            amount: parsedAmount,
-            description: `Auto-verified UPI topup via SMS | Bank: ${bank_name || 'Unknown'} | UTR: ${cleanUtr}`,
-        }]);
-
-        // ── Success log ───────────────────────────────────────────────────────
-        await supabase.from('logs').insert([{
-            user_id: req.user.id,
-            action: `AUTO_VERIFY_SUCCESS: ₹${parsedAmount} credited | UTR: ${cleanUtr} | Bank: ${bank_name || '?'}`,
-            ip_address: req.ip,
-            metadata: { utr: cleanUtr, amount: parsedAmount, bank_name, auto: true },
-        }]);
-
-        return res.json({
-            message: `✅ Payment verified! ₹${parsedAmount} = ${parsedAmount} BUG's added to your wallet instantly.`,
-            auto_approved: true,
-            amount_credited: parsedAmount,
-        });
-    }
-
-    // ── Suspicious: leave as pending, log for admin audit ────────────────────
+    // ── Log for admin audit ───────────────────────────────────────────────────
+    const smsAgeMin = sms_timestamp_ms ? Math.round((Date.now() - Number(sms_timestamp_ms)) / 60000) : null;
     await supabase.from('logs').insert([{
         user_id: req.user.id,
-        action: `AUTO_VERIFY_SUSPICIOUS: UTR ${cleanUtr} | Amount: ${parsedAmount} | Flags: ${isSuspicious.join('; ')}`,
+        action: `AUTO_VERIFY_PENDING: UTR ${cleanUtr} | Amount: ₹${parsedAmount} | Bank: ${bank_name || '?'}${smsAgeMin !== null ? ` | SMS age: ${smsAgeMin}min` : ''}`,
         ip_address: req.ip,
-        metadata: { utr: cleanUtr, amount: parsedAmount, suspicious_flags: isSuspicious, sms_raw },
+        metadata: { utr: cleanUtr, amount: parsedAmount, bank_name, sms_timestamp_ms, sms_raw },
     }]);
 
     return res.status(202).json({
-        message: 'Payment received! We\'re doing a quick security check — your BUG\'s will be credited shortly.',
+        message: 'Payment recorded! Admin will verify your UTR and credit your BUG\'s shortly (usually within a few hours).',
         auto_approved: false,
         pending: true,
-        flags: isSuspicious,
     });
 }));
 

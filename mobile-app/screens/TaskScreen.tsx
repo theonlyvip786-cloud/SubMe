@@ -137,7 +137,7 @@ export default function TaskScreen({ route, navigation }: any) {
                             imageHash = await Crypto.digestStringAsync(
                                 Crypto.CryptoDigestAlgorithm.SHA256,
                                 proofImage.base64,
-                                { encoding: Crypto.CryptoDigestEncoding.HEX }
+                                { encoding: Crypto.CryptoEncoding.HEX }
                             );
                         }
                         const response = await fetch(proofImage.uri);
@@ -157,7 +157,7 @@ export default function TaskScreen({ route, navigation }: any) {
                         imageHash = await Crypto.digestStringAsync(
                             Crypto.CryptoDigestAlgorithm.SHA256,
                             base64Data,
-                            { encoding: Crypto.CryptoDigestEncoding.HEX }
+                            { encoding: Crypto.CryptoEncoding.HEX }
                         );
                         screenshotUrl = `data:image/jpeg;base64,${proofImage.base64}`;
                     }

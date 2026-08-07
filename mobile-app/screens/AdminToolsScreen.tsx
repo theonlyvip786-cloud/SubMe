@@ -1687,6 +1687,14 @@ const styles = StyleSheet.create({
     creditFormCard: {
         paddingVertical: spacing[4],
     },
+    inputLabel: {
+        fontFamily,
+        fontSize: typography.size.sm,
+        fontWeight: typography.weight.semibold,
+        color: colors.textPrimary,
+        marginBottom: spacing[2],
+        marginLeft: spacing[1],
+    },
     searchBar: {
         minHeight: 52,
         marginBottom: spacing[4],

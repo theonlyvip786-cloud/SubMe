@@ -150,8 +150,8 @@ router.post('/users/:id/ban', asyncHandler(async (req, res) => {
 router.post('/users/credit', async (req, res) => {
     const { userId, amount, description } = req.body;
     const creditAmount = Number(amount);
-    if (!userId || isNaN(creditAmount) || !Number.isInteger(creditAmount) || creditAmount === 0) {
-        return res.status(400).json({ error: 'Invalid userId or amount (must be a non-zero whole number).' });
+    if (!userId || isNaN(creditAmount) || !Number.isInteger(creditAmount) || creditAmount <= 0) {
+        return res.status(400).json({ error: 'Invalid userId or amount (must be a positive whole number).' });
     }
     try {
         const { data: user, error } = await supabase.from('users').select('username, email').eq('id', userId).single();
