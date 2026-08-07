@@ -21,10 +21,7 @@ import * as Clipboard from 'expo-clipboard';
 import Y2KNote from '../theme/Y2KNote';
 import Y2KAlertPopup from '../theme/Y2KAlertPopup';
 import { useSmsReader, requestSmsPermission } from '../lib/useSmsReader';
-import PaymentPermissionModal, {
-  shouldShowPermissionModal,
-  markPermissionModalShown,
-} from '../theme/PaymentPermissionModal';
+// PaymentPermissionModal removed — auto-verify setup popup permanently disabled
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CASHFREE FEATURE FLAG (Disabled — using manual UPI flow with 3 UPI handles)
@@ -403,7 +400,7 @@ export default function WalletScreen({ navigation }: any) {
   const [isScanningSms, setIsScanningSms] = useState(false);
   const [scanningSecondsLeft, setScanningSecondsLeft] = useState(30);
   const scanningIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const [showPermModal, setShowPermModal] = useState(false);
+  // showPermModal removed — notification popup permanently disabled
 
   useEffect(() => {
     return () => {
@@ -554,17 +551,11 @@ export default function WalletScreen({ navigation }: any) {
   };
 
   useEffect(() => {
-    const checkPerms = async () => {
-      const shouldShow = await shouldShowPermissionModal();
-      if (shouldShow) setShowPermModal(true);
-    };
     refreshAll(true);
     fetchUpiConfig();
-    checkPerms();
-    const unsub = navigation.addListener('focus', async () => {
+    const unsub = navigation.addListener('focus', () => {
       refreshAll(true);
       fetchUpiConfig();
-      checkPerms();
     });
     return unsub;
   }, [navigation, token, fetchUpiConfig]);
@@ -953,20 +944,22 @@ export default function WalletScreen({ navigation }: any) {
           <Text style={styles.swapHelperText}>Credited after admin approval</Text>
         </View>
 
+        {/* ─── Payment Warning Banner ──────────────────────────────── */}
+        <View style={styles.warningBanner}>
+          <Ionicons name="warning-outline" size={18} color="#92400e" style={{ flexShrink: 0, marginTop: 1 }} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.warningTitle}>Important Payment Notice</Text>
+            <Text style={styles.warningText}>
+              After paying via UPI, you MUST submit UTR number + payment screenshot below. BUG's are credited only after admin verification (usually within a few hours).
+            </Text>
+          </View>
+        </View>
+
         {/* ─── UPI Handle Selector & Copy Box ──────────────────────── */}
         <View style={styles.upiCardContainer}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
-            <View style={[styles.upiCardHeader, { flex: 1, minWidth: 140 }]}>
-              <Ionicons name="qr-code-outline" size={18} color={colors.black} />
-              <Text style={styles.upiCardTitle} numberOfLines={1}>Select Pay Handle</Text>
-            </View>
-            <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.lime, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}
-              onPress={() => setShowPermModal(true)}
-            >
-              <Ionicons name="flash-outline" size={12} color={colors.black} />
-              <Text style={{ fontFamily, fontSize: 10, fontWeight: '700', color: colors.black }}>Auto-Verify Setup</Text>
-            </TouchableOpacity>
+          <View style={[styles.upiCardHeader, { marginBottom: 6 }]}>
+            <Ionicons name="qr-code-outline" size={18} color={colors.black} />
+            <Text style={styles.upiCardTitle} numberOfLines={1}>Select Pay Handle</Text>
           </View>
           <Text style={styles.upiCardSubtitle}>
             Tap a handle to select it for instant payment, or click copy to pay manually:
@@ -1246,11 +1239,7 @@ export default function WalletScreen({ navigation }: any) {
           />
         </View>
       )}
-      {/* Payment Permission Modal (shown once per device on wallet open) */}
-      <PaymentPermissionModal
-        visible={showPermModal}
-        onDone={() => setShowPermModal(false)}
-      />
+      {/* PaymentPermissionModal permanently removed */}
     </SafeAreaView>
   );
 }
@@ -1318,7 +1307,7 @@ const styles = StyleSheet.create({
   balanceCard: {
     borderRadius: radii['2xl'],
     paddingHorizontal: spacing[6],
-    paddingVertical: spacing[8], // Increased vertical padding to increase card height
+    paddingVertical: spacing[3],
     ...shadows.md,
   },
   balanceLabel: {
@@ -1340,6 +1329,32 @@ const styles = StyleSheet.create({
   chipDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.blue },
   chipText: { fontFamily, fontSize: typography.size.xs, fontWeight: typography.weight.bold, color: colors.black },
   transSection: { marginBottom: spacing[4] },
+  warningBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing[3],
+    backgroundColor: '#fef3c7',
+    borderRadius: radii.xl,
+    padding: spacing[4],
+    marginTop: spacing[2],
+    marginBottom: spacing[4],
+    borderWidth: 1.5,
+    borderColor: '#f59e0b',
+  },
+  warningTitle: {
+    fontFamily,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.bold,
+    color: '#92400e',
+    marginBottom: 2,
+  },
+  warningText: {
+    fontFamily,
+    fontSize: typography.size.xs,
+    color: '#92400e',
+    lineHeight: 17,
+    opacity: 0.9,
+  },
   transTitle: {
     fontFamily, fontSize: typography.size.base, fontWeight: typography.weight.bold,
     color: colors.textPrimary, marginBottom: spacing[4],
