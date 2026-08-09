@@ -34,10 +34,18 @@ router.post('/request', apiLimiter, authMiddleware, asyncHandler(async (req, res
             p_platform: platform === 'instagram' ? 'instagram' : 'youtube',
             p_thumbnail_id: thumbnailId || null,
         });
-        // BUG-20: promoId was unused; result.promotion_id available if needed in future
+
+        // Instantly approve the promotion so it goes live immediately
+        if (result && result.promotion_id) {
+            try {
+                await callRpc(supabase, 'approve_promotion', { promo_id: result.promotion_id });
+            } catch (err) {
+                console.error("Failed to auto-approve promotion:", err);
+            }
+        }
 
         res.json({
-            message: 'Promotion submitted! It will be reviewed by admin and go live once approved.',
+            message: 'Promotion published! It is now live in the task feed.',
             cost: result && result.cost,
         });
     } catch (err) {

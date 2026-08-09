@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    View, Text, TouchableOpacity, Alert, StyleSheet,
-    ActivityIndicator, ScrollView, RefreshControl, Animated, Platform, Linking,
+    View, Text, TouchableOpacity, Alert, StyleSheet, Image,
+    ActivityIndicator, ScrollView, RefreshControl, Animated, Platform, Linking, Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
+import YoutubePlayer from 'react-native-youtube-iframe';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Crypto from 'expo-crypto';
 import axios from 'axios';
 import useAuthStore from '../store/useAuthStore';
-import { API_URL } from '../config';
+import { API_URL, SUPABASE_URL } from '../config';
 import { supabase } from '../lib/supabase';
 import { colors, typography, spacing, radii, shadows, fontFamily } from '../theme/designSystem';
 import { AnimatedPressable } from '../theme/animations';
@@ -18,22 +19,78 @@ import { COPY } from '../theme/copy';
 import Y2KNote from '../theme/Y2KNote';
 import Y2KAlertPopup from '../theme/Y2KAlertPopup';
 import Y2KCelebrationOverlay from '../theme/Y2KCelebrationOverlay';
+import { getThumbnailSource } from '../assets/thumbnails';
 
-// Extracts YouTube video ID from various URL formats
+function CreatorAvatar({ userId, username, size = 18 }: { userId?: string; username?: string; size?: number }) {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [userId, username]);
+
+  const displayName = username || 'Creator';
+  const cacheBust = Math.floor(Date.now() / 30000);
+  const avatarUrl = userId ? `${SUPABASE_URL}/storage/v1/object/public/avatars/${userId}.jpg?v=${cacheBust}` : null;
+  const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=16120F&color=CCFF00&bold=true&size=128`;
+
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', backgroundColor: colors.charcoal, justifyContent: 'center', alignItems: 'center', marginRight: 4 }}>
+      {!hasError && avatarUrl ? (
+        <Image
+          source={{ uri: avatarUrl }}
+          style={{ width: size, height: size, borderRadius: size / 2 }}
+          onError={() => setHasError(true)}
+        />
+      ) : (
+        <Image
+          source={{ uri: fallbackUrl }}
+          style={{ width: size, height: size, borderRadius: size / 2 }}
+        />
+      )}
+    </View>
+  );
+}
+
 function getYouTubeId(url: string): string | null {
     if (!url) return null;
-    // Standard: ?v=ID
+    const shortsMatch = url.match(/\/shorts\/([^?&/]+)/);
+    if (shortsMatch) return shortsMatch[1];
     const vMatch = url.match(/[?&]v=([^&]+)/);
     if (vMatch) return vMatch[1];
-    // Shortened: youtu.be/ID
     const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
     if (shortMatch) return shortMatch[1];
-    // Embed: /embed/ID
     const embedMatch = url.match(/\/embed\/([^?&]+)/);
     if (embedMatch) return embedMatch[1];
     return null;
 }
 
+function getInstagramEmbedUrl(url?: string): string {
+    if (!url) return 'https://www.instagram.com';
+    const match = url.match(/\/(?:reel|reels|p|share\/reel)\/([A-Za-z0-9_-]+)/);
+    if (match && match[1]) {
+        return `https://www.instagram.com/p/${match[1]}/embed/captioned/`;
+    }
+    const cleanUrl = url.split('?')[0].replace(/\/$/, '');
+    if (cleanUrl.endsWith('/embed') || cleanUrl.endsWith('/embed/captioned')) {
+        return cleanUrl;
+    }
+    return `${cleanUrl}/embed/captioned/`;
+}
+
+function getTaskTimeLeft(createdAt?: string): string {
+    if (!createdAt) return '24h left';
+    const created = new Date(createdAt).getTime();
+    const expire = created + 24 * 60 * 60 * 1000;
+    const diff = expire - Date.now();
+    if (diff <= 0) return 'Expired';
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    if (hours > 0) return `${hours}h ${mins}m left`;
+    return `${mins}m left`;
+}
+
+const { width: screenWidth } = Dimensions.get('window');
+const PLAYER_HEIGHT = Math.round((screenWidth - 48) * (9 / 16));
 const REQUIRED_WATCH_TIME = 180; // 3 minutes in seconds
 
 export default function TaskScreen({ route, navigation }: any) {
@@ -51,6 +108,7 @@ export default function TaskScreen({ route, navigation }: any) {
     const [uploadingProof, setUploadingProof] = useState(false);
     const [proofUploaded, setProofUploaded] = useState(false);
     const [videoReady, setVideoReady] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const taskData = task || {};
@@ -58,7 +116,7 @@ export default function TaskScreen({ route, navigation }: any) {
     const videoId = getYouTubeId(taskData.video_url || '');
     const watchTime = isInstagram ? 0 : (taskData.required_watch_time || REQUIRED_WATCH_TIME);
     const timerComplete = timer >= watchTime;
-    const mcqDone = isInstagram || (!taskData.mcq_question || answer !== null);
+    const mcqDone = !taskData.mcq_question || answer !== null;
     // BUG-09: For YouTube tasks, user must have tapped Subscribe (subscribed=true) before submitting.
     // For Instagram tasks, subscribed is set to true when they tap 'Watch Reel on Instagram'.
     const isReady = timerComplete && mcqDone && subscribed && (proofUploaded || proofImage !== null);
@@ -70,33 +128,42 @@ export default function TaskScreen({ route, navigation }: any) {
         navigation.goBack();
     };
 
-    // Start task session + timer on mount (runs once regardless of token refresh)
+    // Start task session on mount
     const hasStartedRef = React.useRef(false);
     useEffect(() => {
         if (!hasStartedRef.current) {
             hasStartedRef.current = true;
             axios.post(`${API_URL}/api/tasks/${task.id}/start`, {}, {
                 headers: { Authorization: `Bearer ${token}` },
-            }).catch(err => console.warn('Session start error:', err));
+            }).catch(err => {
+                console.warn('Session start error:', err);
+                Alert.alert('Session Error', `Could not start task session: ${err.response?.data?.error || err.message}`);
+            });
         }
+    }, [task.id, token]);
 
-        timerRef.current = setInterval(() => {
-            setTimer(t => t + 1);
-        }, 1000);
+    // Timer ticks ONLY when video is actively playing (pauses when user pauses video)
+    useEffect(() => {
+        if (isInstagram || timerComplete) return;
+
+        if (isPlaying) {
+            timerRef.current = setInterval(() => {
+                setTimer(t => t + 1);
+            }, 1000);
+        } else {
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
+        }
 
         return () => {
-            if (timerRef.current) clearInterval(timerRef.current);
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    // Stop timer once watch time is complete
-    useEffect(() => {
-        if (timer >= watchTime && timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-        }
-    }, [timer]);
+    }, [isPlaying, isInstagram, timerComplete]);
 
     const onRefresh = async () => {
         setRefreshing(true);
@@ -127,19 +194,21 @@ export default function TaskScreen({ route, navigation }: any) {
             let screenshotUrl = '';
             if (proofImage) {
                 try {
-                    // BUG-10: Strip query params before extracting extension (same as SubmitProofScreen fix)
+                    // Compute SHA-256 hash of base64 data before upload
+                    if (proofImage.base64) {
+                        const cleanBase64 = proofImage.base64.replace(/^data:image\/\w+;base64,/, '');
+                        imageHash = await Crypto.digestStringAsync(
+                            Crypto.CryptoDigestAlgorithm.SHA256,
+                            cleanBase64,
+                            { encoding: Crypto.CryptoEncoding.HEX }
+                        );
+                    }
+
+                    // Try uploading to Supabase Storage
                     const ext = (proofImage.uri.split('?')[0].split('.').pop() || 'jpg').toLowerCase();
                     const fileName = `subscription-proofs/${taskData.id}_${req_user_safe()}_${Date.now()}.${ext}`;
 
                     try {
-                        if (proofImage.base64) {
-                            // Compute SHA-256 hash of base64 data before upload
-                            imageHash = await Crypto.digestStringAsync(
-                                Crypto.CryptoDigestAlgorithm.SHA256,
-                                proofImage.base64,
-                                { encoding: Crypto.CryptoEncoding.HEX }
-                            );
-                        }
                         const response = await fetch(proofImage.uri);
                         const blob = await response.blob();
                         const { error: uploadError } = await supabase.storage
@@ -147,19 +216,21 @@ export default function TaskScreen({ route, navigation }: any) {
                             .upload(fileName, blob, { contentType: `image/${ext}`, upsert: true });
                         if (!uploadError) {
                             screenshotUrl = supabase.storage.from('screenshots').getPublicUrl(fileName).data.publicUrl;
+                        } else {
+                            console.log('Supabase storage upload error:', uploadError);
                         }
                     } catch (storageErr) {
                         console.log('Storage upload fallback:', storageErr);
                     }
 
-                    if (!screenshotUrl && proofImage.base64 && !imageHash) {
-                        const base64Data = proofImage.base64.replace(/^data:image\/\w+;base64,/, '');
-                        imageHash = await Crypto.digestStringAsync(
-                            Crypto.CryptoDigestAlgorithm.SHA256,
-                            base64Data,
-                            { encoding: Crypto.CryptoEncoding.HEX }
-                        );
+                    // Fallback 1: Use base64 data URI if Supabase storage upload returned no publicUrl
+                    if (!screenshotUrl && proofImage.base64) {
                         screenshotUrl = `data:image/jpeg;base64,${proofImage.base64}`;
+                    }
+
+                    // Fallback 2: Use local file URI
+                    if (!screenshotUrl && proofImage.uri) {
+                        screenshotUrl = proofImage.uri;
                     }
 
                     if (screenshotUrl) {
@@ -222,8 +293,36 @@ export default function TaskScreen({ route, navigation }: any) {
         ]).start();
     }, []);
 
-    // Build YouTube embed HTML
+    const getReelDirectUrl = (task: any): string => {
+        const vUrl = task?.video_url || '';
+        const cUrl = task?.channel_url || '';
+
+        if (vUrl.includes('/reel/') || vUrl.includes('/p/') || vUrl.includes('/reels/') || vUrl.includes('/share/reel/')) {
+            return vUrl;
+        }
+        if (cUrl.includes('/reel/') || cUrl.includes('/p/') || cUrl.includes('/reels/') || cUrl.includes('/share/reel/')) {
+            return cUrl;
+        }
+        return vUrl || cUrl;
+    };
+
+    const handleOpenInstaReel = () => {
+        const reelUrl = getReelDirectUrl(taskData);
+        if (reelUrl) {
+            if (Platform.OS === 'web') {
+                window.open(reelUrl, '_blank');
+            } else {
+                Linking.openURL(reelUrl).catch(() => {
+                    Alert.alert('Error', 'Unable to open Instagram link');
+                });
+            }
+        }
+        setSubscribed(true);
+    };
+
+    // Build YouTube embed HTML with origin header to resolve Error 153 player configuration restriction
     const embedHtml = isInstagram ? `
+    <!DOCTYPE html>
     <html>
     <head><meta name="viewport" content="width=device-width, initial-scale=1"></head>
     <body style="margin:0;padding:0;background-color:#000;display:flex;justify-content:center;align-items:center;">
@@ -231,16 +330,20 @@ export default function TaskScreen({ route, navigation }: any) {
     </body>
     </html>
     ` : videoId ? `
+    <!DOCTYPE html>
     <html>
     <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-      <style>body{margin:0;background-color:#000;} iframe{width:100%;height:100vh;}</style>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+      <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html, body { width:100%; height:100%; background-color:#000; overflow:hidden; }
+        iframe { width:100%; height:100%; border:0; }
+      </style>
     </head>
     <body>
       <iframe 
-        src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1" 
-        frameborder="0" 
-        allow="autoplay; fullscreen; encrypted-media"
+        src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&enablejsapi=1&origin=https://www.youtube.com" 
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
         allowfullscreen
       ></iframe>
     </body>
@@ -279,24 +382,35 @@ export default function TaskScreen({ route, navigation }: any) {
                         {/* Instagram Task Streamlined Flow vs YouTube Task Video Flow */}
                         {isInstagram ? (
                             <View style={styles.instaSection}>
-                                {/* Instagram Task Bento Header */}
-                                <View style={styles.instaTaskContainer}>
+                                {/* Instagram Task Header Card */}
+                                <View style={styles.taskHeaderCard}>
                                     <View style={styles.instaHeaderRow}>
                                         <View style={{ flex: 1 }}>
                                             <Text style={styles.instaCardTitle}>{taskData.title}</Text>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, marginBottom: 6 }}>
+                                                <CreatorAvatar userId={taskData.users?.id || taskData.creator_user_id} username={taskData.users?.username} size={18} />
+                                                <Text style={{ fontFamily, fontSize: typography.size.xs, color: colors.textSecondary, fontWeight: '700' }}>
+                                                    {taskData.users?.username ? `@${taskData.users.username}` : `Creator`}
+                                                </Text>
+                                            </View>
                                             <View style={styles.instaTagRow}>
                                                 <View style={styles.instaBadgePill}>
                                                     <Text style={styles.instaBadgeText}>INSTAGRAM REEL</Text>
                                                 </View>
                                                 <View style={styles.rewardBadge}>
                                                     <Ionicons name="gift-outline" size={14} color={colors.black} />
-                                                    <Text style={styles.rewardBadgeText}>+{taskData.reward_points} BUG's</Text>
+                                                    <Text style={styles.rewardBadgeText}>+{taskData.is_vip ? "2 BUG's" : "1 BUG"}</Text>
+                                                </View>
+                                                <View style={styles.expiryTagPill}>
+                                                    <Ionicons name="time-outline" size={12} color="#E1306C" />
+                                                    <Text style={styles.expiryTagText}>{getTaskTimeLeft(taskData.created_at)}</Text>
                                                 </View>
                                             </View>
                                         </View>
                                     </View>
+                                </View>
 
-                                    {/* Step 1: Watch & Follow Creator */}
+                                    {/* Step 1: Watch Reel & Follow Creator */}
                                     <View style={styles.instaStepCard}>
                                         <View style={styles.stepHeaderRow}>
                                             <View style={styles.stepNumberBadge}>
@@ -304,96 +418,162 @@ export default function TaskScreen({ route, navigation }: any) {
                                             </View>
                                             <View style={{ flex: 1 }}>
                                                 <Text style={styles.stepTitle}>Watch Reel & Follow Creator</Text>
-                                                <Text style={styles.stepDesc}>Open the Reel on Instagram, watch content, and follow the creator.</Text>
+                                                <Text style={styles.stepDesc}>Tap the poster below to open Reel on Instagram, watch content, and follow creator.</Text>
                                             </View>
                                         </View>
 
+                                        {/* Reel Preview Card — Tap to open in Instagram App */}
                                         <TouchableOpacity 
-                                            style={[styles.watchReelBtn, subscribed && styles.watchReelBtnDone]}
-                                            activeOpacity={0.85}
-                                            onPress={() => {
-                                                const reelUrl = taskData.video_url || taskData.channel_url;
-                                                if (reelUrl) {
-                                                    if (Platform.OS === 'web') {
-                                                        window.open(reelUrl, '_blank');
-                                                    } else {
-                                                        Linking.openURL(reelUrl).catch(() => {
-                                                            Alert.alert('Error', 'Unable to open Instagram link');
-                                                        });
-                                                    }
-                                                }
-                                                setSubscribed(true);
-                                            }}
+                                            style={[styles.instaPlayCard, { width: '100%', aspectRatio: 9 / 15, marginTop: spacing[3], backgroundColor: '#121212' }]}
+                                            activeOpacity={0.9}
+                                            onPress={handleOpenInstaReel}
                                         >
-                                            <Ionicons name={subscribed ? "checkmark-circle" : "logo-instagram"} size={20} color={subscribed ? colors.black : colors.white} />
-                                            <Text style={[styles.watchReelBtnText, subscribed && styles.watchReelBtnTextDone]}>
-                                                {subscribed ? 'Opened Instagram — Upload Proof Below' : 'Watch Reel on Instagram'}
-                                            </Text>
-                                            {!subscribed && <Ionicons name="open-outline" size={16} color={colors.white} style={{ marginLeft: 2 }} />}
+                                            {getThumbnailSource(taskData.thumbnail_id) ? (
+                                                <Image 
+                                                    source={getThumbnailSource(taskData.thumbnail_id)} 
+                                                    style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }} 
+                                                    resizeMode="cover" 
+                                                />
+                                            ) : (
+                                                <View style={{ width: '100%', height: '100%', backgroundColor: '#000000', position: 'absolute' }} />
+                                            )}
+                                            
+                                            {/* Center Play Badge */}
+                                            <View style={styles.instaPlayCenterBox}>
+                                                <View style={styles.instaGradientPlayBtn}>
+                                                    <Ionicons name="play" size={32} color={colors.white} style={{ marginLeft: 4 }} />
+                                                </View>
+                                                <Text style={[styles.instaPlayTitle, { textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: {width: -1, height: 1}, textShadowRadius: 10 }]}>Tap to Watch Reel on Instagram</Text>
+                                                <Text style={[styles.instaPlaySub, { textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: {width: -1, height: 1}, textShadowRadius: 10 }]}>Opens Reel directly in Instagram App</Text>
+                                            </View>
                                         </TouchableOpacity>
                                     </View>
 
-                                    {/* Step 2: Upload Proof Screenshot (unlocked once Watch Reel is tapped) */}
+                                    {/* Step 2 & 3: Unlocked ONLY after user taps 'Tap to Watch Reel' */}
                                     {subscribed && (
-                                        <View style={[styles.instaStepCard, { marginTop: spacing[4] }]}>
+                                        <>
+                                            {/* Step 2: Upload Proof Screenshot */}
+                                            <View style={[styles.instaStepCard, { marginTop: spacing[4] }]}>
+                                                <View style={styles.stepHeaderRow}>
+                                                    <View style={[styles.stepNumberBadge, { backgroundColor: colors.blue }]}>
+                                                        <Text style={[styles.stepNumberText, { color: colors.white }]}>2</Text>
+                                                    </View>
+                                                    <View style={{ flex: 1 }}>
+                                                        <Text style={styles.stepTitle}>Upload Proof Screenshot</Text>
+                                                        <Text style={styles.stepDesc}>Upload a screenshot showing you followed/liked on Instagram.</Text>
+                                                    </View>
+                                                </View>
+
+                                                <TouchableOpacity
+                                                    style={[styles.proofPicker, proofImage && styles.proofPickerDone]}
+                                                    onPress={pickProofImage}
+                                                    activeOpacity={0.75}
+                                                >
+                                                    {proofImage ? (
+                                                        <View style={styles.proofPickerInner}>
+                                                            <Ionicons name="checkmark-circle" size={26} color={colors.black} />
+                                                            <Text style={styles.proofPickerTextDone}>Screenshot Selected ✓</Text>
+                                                            <Text style={styles.proofPickerChange}>Tap to change</Text>
+                                                        </View>
+                                                    ) : (
+                                                        <View style={styles.proofPickerInner}>
+                                                            <Ionicons name="cloud-upload-outline" size={26} color="#E1306C" />
+                                                            <Text style={styles.proofPickerText}>Select Screenshot from Gallery</Text>
+                                                        </View>
+                                                    )}
+                                                </TouchableOpacity>
+
+                                                {proofImage && !proofUploaded && (
+                                                    <AnimatedPressable
+                                                        style={[styles.proofUploadBtn, { backgroundColor: '#E1306C', marginTop: spacing[3] }]}
+                                                        onPress={uploadProof}
+                                                        disabled={uploadingProof}
+                                                    >
+                                                        {uploadingProof ? (
+                                                            <ActivityIndicator color={colors.white} size="small" />
+                                                        ) : (
+                                                            <>
+                                                                <Ionicons name="send" size={16} color={colors.white} />
+                                                                <Text style={[styles.proofUploadBtnText, { color: colors.white }]}>Send Proof to Creator</Text>
+                                                            </>
+                                                        )}
+                                                    </AnimatedPressable>
+                                                )}
+
+                                                {proofUploaded && (
+                                                    <View style={styles.proofSuccess}>
+                                                        <Ionicons name="checkmark-circle" size={20} color="#059669" />
+                                                        <Text style={styles.proofSuccessText}>Proof Sent to Creator ✓</Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        </>
+                                    )}
+
+                                    {/* Step 3: Quick Question (MCQ) - Always visible so user can see it */}
+                                    {taskData.mcq_question && (
+                                        <View style={[styles.instaStepCard, { marginTop: spacing[4], borderLeftWidth: 4, borderLeftColor: '#E1306C' }]}>
                                             <View style={styles.stepHeaderRow}>
-                                                <View style={[styles.stepNumberBadge, { backgroundColor: colors.blue }]}>
-                                                    <Text style={[styles.stepNumberText, { color: colors.white }]}>2</Text>
+                                                <View style={[styles.stepNumberBadge, { backgroundColor: '#E1306C' }]}>
+                                                    <Text style={[styles.stepNumberText, { color: colors.white }]}>3</Text>
                                                 </View>
                                                 <View style={{ flex: 1 }}>
-                                                    <Text style={styles.stepTitle}>Upload Proof Screenshot</Text>
-                                                    <Text style={styles.stepDesc}>Upload a screenshot showing you followed/liked on Instagram.</Text>
+                                                    <Text style={styles.stepTitle}>Quick Question</Text>
+                                                    <Text style={[styles.stepDesc, { color: colors.textPrimary, fontWeight: '700', fontSize: typography.size.sm, marginTop: 2 }]}>
+                                                        {taskData.mcq_question}
+                                                    </Text>
                                                 </View>
                                             </View>
 
-                                            <TouchableOpacity
-                                                style={[styles.proofPicker, proofImage && styles.proofPickerDone]}
-                                                onPress={pickProofImage}
-                                                activeOpacity={0.75}
-                                            >
-                                                {proofImage ? (
-                                                    <View style={styles.proofPickerInner}>
-                                                        <Ionicons name="checkmark-circle" size={26} color={colors.black} />
-                                                        <Text style={styles.proofPickerTextDone}>Screenshot Selected ✓</Text>
-                                                        <Text style={styles.proofPickerChange}>Tap to change</Text>
-                                                    </View>
-                                                ) : (
-                                                    <View style={styles.proofPickerInner}>
-                                                        <Ionicons name="cloud-upload-outline" size={26} color="#E1306C" />
-                                                        <Text style={styles.proofPickerText}>Select Screenshot from Gallery</Text>
-                                                    </View>
-                                                )}
-                                            </TouchableOpacity>
-
-                                            {proofImage && !proofUploaded && (
-                                                <AnimatedPressable
-                                                    style={[styles.proofUploadBtn, { backgroundColor: '#E1306C', marginTop: spacing[3] }]}
-                                                    onPress={uploadProof}
-                                                    disabled={uploadingProof}
-                                                >
-                                                    {uploadingProof ? (
-                                                        <ActivityIndicator color={colors.white} size="small" />
-                                                    ) : (
-                                                        <>
-                                                            <Ionicons name="send" size={16} color={colors.white} />
-                                                            <Text style={[styles.proofUploadBtnText, { color: colors.white }]}>Send Proof to Creator</Text>
-                                                        </>
-                                                    )}
-                                                </AnimatedPressable>
-                                            )}
-
-                                            {proofUploaded && (
-                                                <View style={styles.proofSuccess}>
-                                                    <Ionicons name="checkmark-circle" size={18} color={colors.mint} />
-                                                    <Text style={styles.proofSuccessText}>Proof sent to creator!</Text>
-                                                </View>
-                                            )}
+                                            <View style={[styles.optionsWrap, { marginTop: spacing[4] }]}>
+                                                {(taskData.mcq_options || []).map((opt: string, index: number) => {
+                                                    const letter = String.fromCharCode(65 + index); // A, B, C, D
+                                                    const isSelected = answer === opt;
+                                                    return (
+                                                        <AnimatedPressable
+                                                            key={`${opt}-${index}`}
+                                                            style={[
+                                                                styles.option,
+                                                                isSelected && { backgroundColor: '#FFF0F5', borderColor: '#E1306C', borderWidth: 2 }
+                                                            ]}
+                                                            onPress={() => setAnswer(opt)}
+                                                        >
+                                                            <View style={{
+                                                                width: 28,
+                                                                height: 28,
+                                                                borderRadius: 14,
+                                                                backgroundColor: isSelected ? '#E1306C' : 'rgba(0,0,0,0.06)',
+                                                                justifyContent: 'center',
+                                                                alignItems: 'center',
+                                                            }}>
+                                                                <Text style={{
+                                                                    fontFamily,
+                                                                    fontSize: 12,
+                                                                    fontWeight: '800',
+                                                                    color: isSelected ? colors.white : colors.textSecondary
+                                                                }}>
+                                                                    {letter}
+                                                                </Text>
+                                                            </View>
+                                                            <Text style={[
+                                                                styles.optText,
+                                                                { flex: 1 },
+                                                                isSelected && { color: '#C13584', fontWeight: '800' }
+                                                            ]}>
+                                                                {opt}
+                                                            </Text>
+                                                            {isSelected && (
+                                                                <Ionicons name="checkmark-circle" size={20} color="#E1306C" />
+                                                            )}
+                                                        </AnimatedPressable>
+                                                    );
+                                                })}
+                                            </View>
                                         </View>
                                     )}
-                                </View>
 
-                                {/* Submit Task Button for Instagram */}
-                                <View style={styles.submitWrap}>
+                                    {/* Submit Task Section */}
+                                    <View style={{ marginTop: spacing[6], marginBottom: spacing[5] }}>
                                     <AnimatedPressable
                                         style={[styles.submitBtn, (!isReady || submitting) && styles.submitDisabled]}
                                         onPress={submitTask}
@@ -420,42 +600,52 @@ export default function TaskScreen({ route, navigation }: any) {
                                     <View style={styles.ytHeaderRow}>
                                         <View style={{ flex: 1 }}>
                                             <Text style={styles.taskCardTitle}>{taskData.title}</Text>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, marginBottom: 6 }}>
+                                                <CreatorAvatar userId={taskData.users?.id || taskData.creator_user_id} username={taskData.users?.username} size={18} />
+                                                <Text style={{ fontFamily, fontSize: typography.size.xs, color: colors.textSecondary, fontWeight: '700' }}>
+                                                    {taskData.users?.username ? `@${taskData.users.username}` : `Creator`}
+                                                </Text>
+                                            </View>
                                             <View style={styles.ytTagRow}>
                                                 <View style={styles.ytBadgePill}>
                                                     <Text style={styles.ytBadgeText}>YOUTUBE TASK</Text>
                                                 </View>
                                                 <View style={styles.rewardBadge}>
                                                     <Ionicons name="gift-outline" size={14} color={colors.black} />
-                                                    <Text style={styles.rewardBadgeText}>+{taskData.reward_points} BUG's</Text>
+                                                    <Text style={styles.rewardBadgeText}>+{taskData.is_vip ? "2 BUG's" : "1 BUG"}</Text>
+                                                </View>
+                                                <View style={styles.expiryTagPill}>
+                                                    <Ionicons name="time-outline" size={12} color="#FF0000" />
+                                                    <Text style={styles.expiryTagText}>{getTaskTimeLeft(taskData.created_at)}</Text>
                                                 </View>
                                             </View>
                                         </View>
                                     </View>
                                 </View>
 
-                                {/* YouTube Video Player */}
+                                 {/* YouTube Video Player (16:9 Aspect Ratio) */}
                                 {videoId ? (
                                     <View style={styles.videoCard}>
-                                        {Platform.OS === 'web' ? (
-                                            <iframe
-                                                src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
-                                                style={{ width: '100%', height: '100%', border: 'none' }}
-                                                allow="autoplay; fullscreen; encrypted-media"
-                                                allowFullScreen
-                                                onLoad={() => setVideoReady(true)}
-                                            />
-                                        ) : (
-                                            <WebView
-                                                source={{ html: embedHtml }}
-                                                style={styles.webview}
-                                                allowsFullscreenVideo
-                                                javaScriptEnabled
-                                                onLoadEnd={() => setVideoReady(true)}
-                                                mediaPlaybackRequiresUserAction={false}
-                                                allowsInlineMediaPlayback
-                                                scrollEnabled={false}
-                                            />
-                                        )}
+                                        <YoutubePlayer
+                                            height={PLAYER_HEIGHT}
+                                            play={true}
+                                            videoId={videoId}
+                                            onReady={() => setVideoReady(true)}
+                                            onChangeState={(state: string) => {
+                                                setIsPlaying(state === 'playing');
+                                            }}
+                                            webViewProps={{
+                                                androidLayerType: 'hardware',
+                                                allowsInlineMediaPlayback: true,
+                                                mediaPlaybackRequiresUserAction: false,
+                                            }}
+                                            initialPlayerParams={{
+                                                preventFullScreen: false,
+                                                controls: true,
+                                                modestbranding: true,
+                                                rel: false,
+                                            }}
+                                        />
                                         {!videoReady && (
                                             <View style={styles.videoLoader}>
                                                 <ActivityIndicator size="large" color="#FF0000" />
@@ -523,8 +713,8 @@ export default function TaskScreen({ route, navigation }: any) {
                                                     size={20}
                                                     color={subscribed ? colors.black : colors.white}
                                                 />
-                                                <Text style={[styles.subscribeBtnText, subscribed && styles.subscribedBtnText]}>
-                                                    {subscribed ? 'Opened YouTube — Upload Proof Below' : 'Subscribe on YouTube'}
+                                                <Text style={[styles.subscribeBtnText, subscribed && styles.subscribedBtnText]} numberOfLines={1} adjustsFontSizeToFit>
+                                                    {subscribed ? 'Opened — Upload Proof Below' : 'Subscribe on YouTube'}
                                                 </Text>
                                                 {!subscribed && <Ionicons name="open-outline" size={16} color={colors.white} style={{ marginLeft: 2 }} />}
                                             </AnimatedPressable>
@@ -533,8 +723,8 @@ export default function TaskScreen({ route, navigation }: any) {
                                             {subscribed && (
                                                 <View style={styles.proofSection}>
                                                     <View style={styles.proofHeader}>
-                                                        <Ionicons name="camera-outline" size={16} color="#FF0000" />
-                                                        <Text style={[styles.proofLabel, { color: '#FF0000' }]}>Upload Subscription Screenshot</Text>
+                                                        <Ionicons name="camera-outline" size={16} color={colors.blue} />
+                                                        <Text style={[styles.proofLabel, { color: colors.blue }]}>Upload Subscription Screenshot</Text>
                                                     </View>
                                                     <Text style={styles.proofHint}>Screenshot sent to creator as proof of subscription.</Text>
                                                     <TouchableOpacity
@@ -550,7 +740,7 @@ export default function TaskScreen({ route, navigation }: any) {
                                                             </View>
                                                         ) : (
                                                             <View style={styles.proofPickerInner}>
-                                                                <Ionicons name="cloud-upload-outline" size={26} color="#FF0000" />
+                                                                <Ionicons name="cloud-upload-outline" size={26} color={colors.blue} />
                                                                 <Text style={styles.proofPickerText}>Select Screenshot from Gallery</Text>
                                                             </View>
                                                         )}
@@ -558,16 +748,16 @@ export default function TaskScreen({ route, navigation }: any) {
 
                                                     {proofImage && !proofUploaded && (
                                                         <AnimatedPressable
-                                                            style={[styles.proofUploadBtn, { backgroundColor: '#FF0000' }]}
+                                                            style={styles.proofUploadBtn}
                                                             onPress={uploadProof}
                                                             disabled={uploadingProof}
                                                         >
                                                             {uploadingProof ? (
-                                                                <ActivityIndicator color={colors.white} size="small" />
+                                                                <ActivityIndicator color={colors.black} size="small" />
                                                             ) : (
                                                                 <>
-                                                                    <Ionicons name="send" size={16} color={colors.white} />
-                                                                    <Text style={[styles.proofUploadBtnText, { color: colors.white }]}>Send Proof to Creator</Text>
+                                                                    <Ionicons name="send" size={16} color={colors.black} />
+                                                                    <Text style={styles.proofUploadBtnText}>Send Proof to Creator</Text>
                                                                 </>
                                                             )}
                                                         </AnimatedPressable>
@@ -575,8 +765,8 @@ export default function TaskScreen({ route, navigation }: any) {
 
                                                     {proofUploaded && (
                                                         <View style={styles.proofSuccess}>
-                                                            <Ionicons name="checkmark-circle" size={18} color={colors.mint} />
-                                                            <Text style={styles.proofSuccessText}>Proof sent to creator!</Text>
+                                                            <Ionicons name="checkmark-circle" size={20} color="#059669" />
+                                                            <Text style={styles.proofSuccessText}>Proof Sent to Creator ✓</Text>
                                                         </View>
                                                     )}
                                                 </View>
@@ -587,14 +777,14 @@ export default function TaskScreen({ route, navigation }: any) {
                                         {taskData.mcq_question && (
                                             <View style={styles.section}>
                                                 <View style={styles.sectionHeader}>
-                                                    <Ionicons name="help-circle-outline" size={18} color="#FF0000" />
-                                                    <Text style={[styles.sectionTitle, { color: '#FF0000' }]}>Quick Question</Text>
+                                                    <Ionicons name="help-circle-outline" size={18} color={colors.textPrimary} />
+                                                    <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Quick Question</Text>
                                                 </View>
-                                                <Text style={styles.questionText}>{task.mcq_question}</Text>
+                                                <Text style={styles.questionText}>{taskData.mcq_question}</Text>
                                                 <View style={styles.optionsWrap}>
-                                                    {(task.mcq_options || []).map((opt: string) => (
+                                                    {(taskData.mcq_options || []).map((opt: string, index: number) => (
                                                         <AnimatedPressable
-                                                            key={opt}
+                                                            key={`${opt}-${index}`}
                                                             style={[styles.option, answer === opt && styles.optionSel]}
                                                             onPress={() => setAnswer(opt)}
                                                         >
@@ -711,9 +901,10 @@ const styles = StyleSheet.create({
 
     taskHeaderCard: {
         backgroundColor: colors.white,
-        borderRadius: radii['2xl'],
-        padding: spacing[5],
-        marginBottom: spacing[5],
+        borderRadius: radii['xl'],
+        paddingVertical: spacing[3],
+        paddingHorizontal: spacing[4],
+        marginBottom: spacing[3],
         ...shadows.sm,
     },
     taskCardTitle: {
@@ -739,10 +930,81 @@ const styles = StyleSheet.create({
         color: colors.black,
         fontFamily,
     },
+    expiryTagPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        backgroundColor: 'rgba(0,0,0,0.06)',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: radii.xs,
+    },
+    expiryTagText: {
+        fontFamily,
+        fontSize: 10,
+        fontWeight: '800',
+        color: colors.textPrimary,
+    },
+
+    // Instagram Play Poster Card
+    instaPlayCard: {
+        borderRadius: radii['2xl'],
+        overflow: 'hidden',
+        position: 'relative',
+        justifyContent: 'center',
+        alignItems: 'center',
+        ...shadows.md,
+    },
+    instaPlayCenterBox: {
+        alignItems: 'center',
+        paddingHorizontal: spacing[4],
+    },
+    instaGradientPlayBtn: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: '#E1306C',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: spacing[3],
+        ...shadows.md,
+    },
+    instaPlayTitle: {
+        fontFamily,
+        fontSize: typography.size.base,
+        fontWeight: '800',
+        color: colors.white,
+        textAlign: 'center',
+    },
+    instaPlaySub: {
+        fontFamily,
+        fontSize: typography.size.xs,
+        color: 'rgba(255,255,255,0.85)',
+        marginTop: 4,
+        textAlign: 'center',
+    },
+    instaPlayBottomPill: {
+        position: 'absolute',
+        bottom: spacing[4],
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: 'rgba(0,0,0,0.65)',
+        paddingHorizontal: spacing[3],
+        paddingVertical: spacing[1.5],
+        borderRadius: radii.full,
+    },
+    instaPlayBottomText: {
+        fontFamily,
+        fontSize: 11,
+        fontWeight: '800',
+        color: colors.white,
+    },
 
     // Video
     videoCard: {
-        height: 220,
+        width: '100%',
+        height: PLAYER_HEIGHT,
         borderRadius: radii['2xl'],
         overflow: 'hidden',
         marginBottom: spacing[5],
@@ -931,13 +1193,19 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: spacing[2],
-        paddingVertical: spacing[2],
+        backgroundColor: '#ECFDF5',
+        borderWidth: 1.5,
+        borderColor: '#A7F3D0',
+        paddingHorizontal: spacing[4],
+        paddingVertical: spacing[3],
+        borderRadius: radii.xl,
+        marginTop: spacing[3],
     },
     proofSuccessText: {
         fontFamily,
         fontSize: typography.size.sm,
-        fontWeight: '700',
-        color: colors.mint,
+        fontWeight: '800',
+        color: '#065F46',
     },
 
     // MCQ
@@ -946,15 +1214,13 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing[2],
-        marginBottom: spacing[3],
+        marginBottom: spacing[2],
     },
     sectionTitle: {
         fontFamily,
-        fontSize: typography.size.sm,
+        fontSize: typography.size.base,
         fontWeight: typography.weight.bold,
-        color: colors.textMuted,
-        textTransform: 'uppercase',
-        letterSpacing: 0.8,
+        color: colors.textPrimary,
     },
     questionText: {
         fontFamily,
@@ -970,30 +1236,34 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: colors.white,
         borderRadius: radii.xl,
-        padding: spacing[4],
+        paddingHorizontal: spacing[4],
+        paddingVertical: spacing[3.5],
         gap: spacing[3],
-        borderWidth: 1.5,
-        borderColor: 'transparent',
+        borderWidth: 2,
+        borderColor: 'rgba(0,0,0,0.06)',
         ...shadows.sm,
     },
     optionSel: {
-        backgroundColor: colors.lime + '30',
+        backgroundColor: colors.lime,
         borderColor: colors.black,
-        borderWidth: 2,
     },
     optRadio: {
         width: 22,
         height: 22,
         borderRadius: 11,
         borderWidth: 2,
-        borderColor: colors.textMuted,
+        borderColor: colors.charcoal,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: colors.white,
     },
-    optRadioSel: { borderColor: colors.blue },
-    optDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.blue },
+    optRadioSel: {
+        borderColor: colors.black,
+        backgroundColor: colors.black,
+    },
+    optDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.white },
     optText: { fontFamily, fontSize: typography.size.base, color: colors.textSecondary, flex: 1 },
-    optTextSel: { color: colors.textPrimary, fontWeight: typography.weight.bold },
+    optTextSel: { color: colors.black, fontWeight: '800' },
 
     // Info Card (before timer)
     infoCard: {
@@ -1038,7 +1308,11 @@ const styles = StyleSheet.create({
         width: '100%',
         ...shadows.md,
     },
-    submitDisabled: { backgroundColor: 'rgba(0,0,0,0.05)' },
+    submitDisabled: { 
+        backgroundColor: '#E5E7EB',
+        shadowOpacity: 0,
+        elevation: 0,
+    },
     submitText: {
         fontFamily,
         fontSize: typography.size.base,
@@ -1214,5 +1488,22 @@ const styles = StyleSheet.create({
         fontSize: 9,
         fontWeight: '900',
         color: '#FF0000',
+    },
+    openExternalBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: spacing[2],
+        marginBottom: spacing[3],
+        backgroundColor: 'rgba(255, 0, 0, 0.05)',
+        borderRadius: radii.md,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 0, 0, 0.12)',
+    },
+    openExternalText: {
+        fontFamily,
+        fontSize: 11,
+        fontWeight: '600',
+        color: colors.textSecondary,
     },
 });

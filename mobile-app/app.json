@@ -8,9 +8,8 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#D4F071"
+      "backgroundColor": "#F9F9F6"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -36,7 +35,8 @@
     },
     "plugins": [
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-splash-screen"
     ]
   }
 }

@@ -48,10 +48,10 @@ export const colors = {
 // Geometric sans-serif stack (Inter / Poppins style)
 // -----------------------------------------------------------
 export const fontFamily = Platform.select({
-  web: 'Inter, Poppins, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  web: 'sans-serif',
   ios: 'System',
   android: 'sans-serif',
-  default: 'System',
+  default: 'sans-serif',
 }) as string;
 
 export const typography = {

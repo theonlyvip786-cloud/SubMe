@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, RefreshControl,
   Animated, Alert, Image, ActivityIndicator, Linking, Platform,
-  PanResponder, AppState, Modal, TouchableOpacity, TextInput,
+  AppState, Modal, TouchableOpacity, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -235,145 +235,240 @@ function BalanceCard({ points, email }: { points: number, email?: string }) {
   );
 }
 
-function SwipeToPay({ amount, onSwipeComplete, disabled }: { amount: string; onSwipeComplete: () => void; disabled?: boolean }) {
-  const pan = useRef(new Animated.Value(0)).current;
-  const [containerWidth, setContainerWidth] = useState(0);
-  const handleSize = 48;
-  const maxDistance = Math.max(containerWidth - handleSize - 8, 1);
+function PaymentStepsGuide() {
+  const steps = [
+    {
+      step: '1',
+      title: 'UPI ID Copy Karein',
+      desc: 'Niche "Select Pay Handle" me UPI ID (theonlyvip786@okaxis) ke "Copy" button par tap karein.',
+      icon: 'copy-outline',
+      color: colors.blue,
+    },
+    {
+      step: '2',
+      title: 'Pay via GPay Par Click Karein',
+      desc: '"Pay with Google Pay (GPay)" button par click karein. GPay app automatic khulega.',
+      icon: 'logo-google',
+      color: colors.lime,
+    },
+    {
+      step: '3',
+      title: 'GPay Me "Pay Anyone" Par Tap Karein',
+      desc: 'Google Pay open hone par "Pay UPI ID or number" ya "Pay anyone" par tap karein aur UPI ID paste karke payment poori karein.',
+      icon: 'arrow-forward-circle-outline',
+      color: colors.lavender,
+    },
+    {
+      step: '4',
+      title: 'SubMe App Par Details Submit Karein',
+      desc: 'Payment ka Screenshot lein, SubMe app me wapis aayein aur UTR & Screenshot submit karke instant BUG\'s credit karein!',
+      icon: 'checkmark-done-circle-outline',
+      color: colors.peach,
+    },
+  ];
 
-  // Looping arrow animation for double chevrons to shimmer/pulse
-  const arrowAnim = useRef(new Animated.Value(0)).current;
+  return (
+    <View style={stepStyles.container}>
+      <View style={stepStyles.header}>
+        <Ionicons name="help-buoy-outline" size={20} color={colors.black} />
+        <Text style={stepStyles.headerTitle}>Step-by-Step Payment Guide</Text>
+      </View>
+      <Text style={stepStyles.headerSub}>Google Pay (GPay) se top-up karne ka aasan tarika:</Text>
+
+      <View style={stepStyles.list}>
+        {steps.map((s, index) => (
+          <View key={s.step} style={[stepStyles.item, index < steps.length - 1 && stepStyles.itemBorder]}>
+            <View style={[stepStyles.numBadge, { backgroundColor: s.color }]}>
+              <Text style={stepStyles.numText}>{s.step}</Text>
+            </View>
+            <View style={stepStyles.content}>
+              <View style={stepStyles.titleRow}>
+                <Text style={stepStyles.title}>{s.title}</Text>
+                <Ionicons name={s.icon as any} size={16} color={colors.black} />
+              </View>
+              <Text style={stepStyles.desc}>{s.desc}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const stepStyles = StyleSheet.create({
+  container: {
+    backgroundColor: colors.white,
+    borderRadius: radii.xl,
+    padding: spacing[4],
+    marginBottom: spacing[5],
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    ...shadows.sm,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginBottom: 2,
+  },
+  headerTitle: {
+    fontFamily,
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.bold,
+    color: colors.black,
+  },
+  headerSub: {
+    fontFamily,
+    fontSize: typography.size.xs,
+    color: colors.textMuted,
+    marginBottom: spacing[4],
+  },
+  list: {
+    gap: spacing[3],
+  },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing[3],
+    paddingBottom: spacing[3],
+  },
+  itemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  numBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 1,
+  },
+  numText: {
+    fontFamily,
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.black,
+  },
+  content: {
+    flex: 1,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  title: {
+    fontFamily,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.bold,
+    color: colors.textPrimary,
+  },
+  desc: {
+    fontFamily,
+    fontSize: 11,
+    color: colors.textSecondary,
+    lineHeight: 16,
+  },
+});
+
+// Simple tap-to-pay button — tapping directly opens the UPI app home screen
+function TapToPay({ onPress, disabled }: { onPress: () => void; disabled?: boolean }) {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const glowAnim = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
+    // Gentle pulsing glow to draw attention
     Animated.loop(
       Animated.sequence([
-        Animated.timing(arrowAnim, {
-          toValue: 1,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(arrowAnim, {
-          toValue: 0,
-          duration: 0,
-          useNativeDriver: true,
-        }),
+        Animated.timing(glowAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
+        Animated.timing(glowAnim, { toValue: 0, duration: 1200, useNativeDriver: true }),
       ])
     ).start();
   }, []);
 
-  const arrowTranslate = arrowAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-6, 6],
-  });
+  const handlePressIn = () =>
+    Animated.spring(pulseAnim, { toValue: 0.96, useNativeDriver: true }).start();
+  const handlePressOut = () =>
+    Animated.spring(pulseAnim, { toValue: 1, friction: 4, useNativeDriver: true }).start();
 
-  const arrowOpacity = arrowAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.35, 1, 0.35],
-  });
-
-  // Keep a reference to maxDistance so the PanResponder closure has access to the updated value
-  const maxDistanceRef = useRef(1);
-  useEffect(() => {
-    maxDistanceRef.current = maxDistance;
-  }, [maxDistance]);
-
-  const onSwipeCompleteRef = useRef(onSwipeComplete);
-  useEffect(() => {
-    onSwipeCompleteRef.current = onSwipeComplete;
-  }, [onSwipeComplete]);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => !disabled,
-      onPanResponderMove: (e, gestureState) => {
-        const newVal = Math.max(0, Math.min(gestureState.dx, maxDistanceRef.current));
-        pan.setValue(newVal);
-      },
-      onPanResponderRelease: (e, gestureState) => {
-        const currentMax = maxDistanceRef.current;
-        if (gestureState.dx >= currentMax * 0.7) { // 70% threshold is more user friendly
-          Animated.timing(pan, {
-            toValue: currentMax,
-            duration: 150,
-            useNativeDriver: false,
-          }).start(() => {
-            onSwipeCompleteRef.current();
-            setTimeout(() => {
-              Animated.spring(pan, {
-                toValue: 0,
-                friction: 8,
-                useNativeDriver: false,
-              }).start();
-            }, 1000);
-          });
-        } else {
-          Animated.spring(pan, {
-            toValue: 0,
-            friction: 8,
-            useNativeDriver: false,
-          }).start();
-        }
-      },
-    })
-  ).current;
-
-  const textOpacity = pan.interpolate({
-    inputRange: [0, Math.max(maxDistance, 10) * 0.5],
-    outputRange: [1, 0],
-    extrapolate: 'clamp',
-  });
+  const glowOpacity = glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.18] });
 
   return (
-    <View
-      style={[styles.swipeContainer, disabled && { opacity: 0.5 }]}
-      onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
-    >
-      {/* Dynamic progress fill */}
-      {!disabled && (
-        <Animated.View style={[
-          styles.swipeProgressFill,
-          {
-            width: Animated.add(pan, handleSize + 8),
-          }
-        ]} />
-      )}
-
-      <Animated.Text style={[styles.swipeText, { opacity: textOpacity }]}>
-        Swipe to Pay ₹{amount || 0}
-      </Animated.Text>
-
-      {/* Looping animated double chevrons on the right */}
-      <Animated.View style={[
-        styles.swipeRightArrow,
-        {
-          opacity: arrowOpacity,
-          transform: [{ translateX: arrowTranslate }],
-        }
-      ]}>
-        <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.6)" />
-        <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.6)" style={{ marginLeft: -6 }} />
-      </Animated.View>
-
-      <Animated.View
-        style={[
-          styles.swipeHandle,
-          {
-            transform: [{ translateX: pan }],
-          },
-        ]}
-        {...panResponder.panHandlers}
+    <Animated.View style={[tapStyles.wrapper, { transform: [{ scale: pulseAnim }], opacity: disabled ? 0.45 : 1 }]}>
+      <TouchableOpacity
+        style={tapStyles.btn}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        disabled={disabled}
+        activeOpacity={1}
       >
-        <Ionicons name="checkmark" size={20} color={colors.black} />
-      </Animated.View>
-    </View>
+        <View style={tapStyles.left}>
+          <View style={tapStyles.iconBox}>
+            <Ionicons name="logo-google" size={22} color={colors.black} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={tapStyles.label}>Pay with Google Pay (GPay)</Text>
+            <Text style={tapStyles.sub}>Auto-copies UPI ID & opens GPay home screen</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+      {/* Pulsing glow overlay */}
+      <Animated.View style={[StyleSheet.absoluteFill, tapStyles.glow, { opacity: glowOpacity }]} pointerEvents="none" />
+    </Animated.View>
   );
 }
+
+const tapStyles = StyleSheet.create({
+  wrapper: {
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+    marginTop: spacing[3],
+    marginBottom: spacing[4],
+    ...shadows.sm,
+  },
+  btn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.lime,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing[4],
+    paddingVertical: 10,
+    borderWidth: 1.5,
+    borderColor: 'rgba(22,18,15,0.12)',
+  },
+  left: { flexDirection: 'row', alignItems: 'center', gap: spacing[3], flex: 1 },
+  iconBox: {
+    width: 36, height: 36, borderRadius: radii.xs,
+    backgroundColor: 'rgba(22,18,15,0.08)',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  label: {
+    fontFamily,
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.bold,
+    color: colors.black,
+  },
+  sub: {
+    fontFamily,
+    fontSize: 11,
+    color: 'rgba(22,18,15,0.65)',
+    marginTop: 2,
+  },
+  glow: {
+    backgroundColor: colors.white,
+    borderRadius: radii.xl,
+  },
+});
 
 export default function WalletScreen({ navigation }: any) {
   const { token, user, updateUser } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [purchaseAmount, setPurchaseAmount] = useState('100');
   const [pendingPaymentCount, setPendingPaymentCount] = useState(0);
   const [cashfreeLoading, setCashfreeLoading] = useState(false);
   const [utrNumber, setUtrNumber] = useState('');
@@ -391,8 +486,11 @@ export default function WalletScreen({ navigation }: any) {
   const [paySubmitting, setPaySubmitting] = useState(false);
   const [proofScreenshot, setProofScreenshot] = useState<string | null>(null); // base64 URI
   const [proofPickerLoading, setProofPickerLoading] = useState(false);
+  const [smsRaw, setSmsRaw] = useState<string>('');
+  const [smsTimestampMs, setSmsTimestampMs] = useState<number | undefined>(undefined);
   const appStateRef = useRef(AppState.currentState);
   const waitingForReturn = useRef(false);
+  const launchTimeRef = useRef<number>(0);
   const modalSlide = useRef(new Animated.Value(300)).current;
   const modalOpacity = useRef(new Animated.Value(0)).current;
   const tickScale = useRef(new Animated.Value(0)).current;
@@ -433,11 +531,7 @@ export default function WalletScreen({ navigation }: any) {
   const handlesList = upiConfig.handles.length > 0 ? upiConfig.handles : DEFAULT_UPI_IDS;
   const selectedUpiId = handlesList[selectedUpiIndex] || handlesList[0];
 
-  // Ref so the AppState listener always sees the current amount without re-subscribing
-  const purchaseAmountRef = useRef(purchaseAmount);
-  useEffect(() => { purchaseAmountRef.current = purchaseAmount; }, [purchaseAmount]);
-
-  const upiUrl = `upi://pay?pa=${selectedUpiId}&pn=${encodeURIComponent(upiConfig.name)}&am=${purchaseAmount}&cu=INR`;
+  const upiUrl = `upi://pay?pa=${selectedUpiId}&pn=${encodeURIComponent(upiConfig.name)}&cu=INR`;
 
   const fetchTransactions = useCallback(async () => {
     try {
@@ -475,18 +569,18 @@ export default function WalletScreen({ navigation }: any) {
   //   3. On return: POST /api/payments/verify-order { order_id }
   //   4. If success: show confetti + refresh balance
   const handleCashfreePayment = async () => {
-    const amt = parseInt(purchaseAmount, 10);
-    if (isNaN(amt) || amt < 50) {
-      Alert.alert('Minimum Amount', 'Minimum top-up is ₹50.');
-      return;
-    }
+    Alert.alert(
+      'Gateway Not Ready',
+      'Online payment is coming soon! Please use the UPI manual flow for now.',
+    );
+    return;
 
     setCashfreeLoading(true);
     try {
       // Step 1: Create Cashfree order
       const orderRes = await axios.post(
         `${API_URL}/api/payments/create-order`,
-        { amount: amt },
+        { amount: 100 },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -574,13 +668,19 @@ export default function WalletScreen({ navigation }: any) {
       if (wasBackground && cameBack && waitingForReturn.current) {
         waitingForReturn.current = false;
 
+        // Prevent instant bounce-back modal triggers if user returned in under 4 seconds
+        const timeSpent = Date.now() - launchTimeRef.current;
+        if (timeSpent < 4000) {
+          return;
+        }
+
         // Check if SMS reading is supported (Android native only)
         if (Platform.OS === 'android' && isSupported) {
           // Check permission
           const hasPermission = await requestSmsPermission();
           if (!hasPermission) {
             // Permission denied — show manual screenshot upload immediately
-            showPaymentModal(purchaseAmountRef.current);
+            showPaymentModal();
             return;
           }
 
@@ -590,7 +690,7 @@ export default function WalletScreen({ navigation }: any) {
 
           let elapsed = 0;
           const checkSms = async () => {
-            const smsResult = await detectSms(purchaseAmountRef.current);
+            const smsResult = await detectSms(); // detect latest without amount
             if (smsResult) {
               // Found! Cleanup scanner immediately
               if (scanningIntervalRef.current) {
@@ -599,51 +699,22 @@ export default function WalletScreen({ navigation }: any) {
               }
               setIsScanningSms(false);
 
-              // ── AUTO-VERIFY (fast-track): submit directly to backend ──────
-              setIsScanningSms(false);
-              try {
-                const autoRes = await axios.post(
-                  `${API_URL}/api/payments/auto-verify`,
-                  {
-                    utr_number: smsResult.utrNumber,
-                    amount: Math.round(parseFloat(smsResult.amount)),
-                    bank_name: smsResult.bankName,
-                    sms_timestamp_ms: smsResult.smsTimestampMs,
-                    sms_raw: smsResult.raw,
-                  },
-                  { headers: { Authorization: `Bearer ${token}` } },
-                );
-
-                if (autoRes.data.auto_approved) {
-                  // INSTANT CREDIT ✅
-                  setShowConfetti(true);
-                  setShowPaymentSuccess(true);
-                  setTimeout(() => setShowConfetti(false), 5000);
-                  await refreshAll(true);
-                  // Update local balance immediately
-                  updateUser({ points: (user?.points ?? 0) + autoRes.data.amount_credited });
-                } else {
-                  // Pending (suspicious flag or credit failure)
-                  Alert.alert(
-                    'Payment Received ✅',
-                    autoRes.data.message || "Your payment is being verified. BUG's will be credited shortly.",
-                  );
-                  await fetchPendingPayments();
-                }
-              } catch (autoErr: any) {
-                // Auto-verify failed — fall back to manual modal
-                setDetectedUtr(smsResult.utrNumber);
-                setDetectedAmount(smsResult.amount);
-                setDetectedBank(smsResult.bankName);
-                setSmsAutoDetected(true);
-                setPayModalVisible(true);
-                Animated.parallel([
-                  Animated.spring(modalSlide, { toValue: 0, friction: 8, tension: 80, useNativeDriver: true }),
-                  Animated.timing(modalOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
-                ]).start(() => {
-                  Animated.spring(tickScale, { toValue: 1, friction: 5, tension: 100, useNativeDriver: true }).start();
-                });
-              }
+              // Auto-verify fallback — show manual modal filled with detected data
+              setDetectedUtr(smsResult.utrNumber);
+              setDetectedAmount(smsResult.amount);
+              setDetectedBank(smsResult.bankName);
+              setSmsRaw(smsResult.raw);
+              setSmsTimestampMs(smsResult.smsTimestampMs);
+              setSmsAutoDetected(true);
+              
+              setPayModalVisible(true);
+              Animated.parallel([
+                Animated.spring(modalSlide, { toValue: 0, friction: 8, tension: 80, useNativeDriver: true }),
+                Animated.timing(modalOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
+              ]).start(() => {
+                Animated.spring(tickScale, { toValue: 1, friction: 5, tension: 100, useNativeDriver: true }).start();
+              });
+              
               return true;
             }
             return false;
@@ -670,16 +741,12 @@ export default function WalletScreen({ navigation }: any) {
                 scanningIntervalRef.current = null;
               }
               setIsScanningSms(false);
-              // Do NOT open screenshot upload modal!
-              Alert.alert(
-                'Payment SMS Not Detected',
-                'We could not detect the payment SMS within 30 seconds. If you made the payment, please contact support.'
-              );
+              showPaymentModal();
             }
           }, 1000);
         } else {
           // iOS, Web, or unsupported environment: show manual entry form immediately
-          showPaymentModal(purchaseAmountRef.current);
+          showPaymentModal();
         }
       }
     });
@@ -687,10 +754,12 @@ export default function WalletScreen({ navigation }: any) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSupported]);
 
-  const showPaymentModal = (amount: string) => {
+  const showPaymentModal = () => {
     setDetectedUtr('');
-    setDetectedAmount(amount);
+    setDetectedAmount('');
     setDetectedBank('');
+    setSmsRaw('');
+    setSmsTimestampMs(undefined);
     setSmsAutoDetected(false);
     setPayModalVisible(true);
     Animated.parallel([
@@ -700,35 +769,60 @@ export default function WalletScreen({ navigation }: any) {
   };
 
   const handlePayViaApp = async () => {
-    const amt = parseInt(purchaseAmount, 10);
-    if (isNaN(amt) || amt < 50) {
-      Alert.alert('Minimum Amount', 'Minimum purchase is 50 points.');
-      return;
-    }
+    const upiId = selectedUpiId;
 
-    const currentDynamicUpiUrl = `upi://pay?pa=${selectedUpiId}&pn=${encodeURIComponent(upiConfig.name)}&am=${amt}&cu=INR`;
-
-    // Reset modal animation values
-    tickScale.setValue(0);
-    modalSlide.setValue(300);
-    modalOpacity.setValue(0);
+    // Step 1: Copy UPI ID to clipboard so user has it ready
+    try {
+      await Clipboard.setStringAsync(upiId);
+    } catch { /* ignore */ }
 
     if (Platform.OS === 'web') {
-      showPaymentModal(purchaseAmount);
+      Alert.alert('UPI ID Copied', `Pay to: ${upiId}\n\nAfter paying in Google Pay, tap Submit Details.`, [
+        { text: 'Submit Details', onPress: () => showPaymentModal() },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
       return;
     }
 
-    // Mark as waiting BEFORE opening UPI app
-    waitingForReturn.current = true;
+    // Step 2: Open Google Pay directly (tez://upi/)
+    const gpayUrl = 'tez://upi/';
+    let appOpened = false;
 
     try {
-      // Directly attempt to open UPI — skip canOpenURL
-      await Linking.openURL(currentDynamicUpiUrl);
-    } catch {
-      waitingForReturn.current = false;
-      showPaymentModal(purchaseAmount);
+      const canOpen = await Linking.canOpenURL(gpayUrl);
+      if (canOpen) {
+        launchTimeRef.current = Date.now();
+        waitingForReturn.current = true;
+        await Linking.openURL(gpayUrl);
+        appOpened = true;
+      }
+    } catch { /* ignore */ }
+
+    // Fallback if tez:// scheme is not directly registered
+    if (!appOpened) {
+      try {
+        const canOpenFallback = await Linking.canOpenURL('upi://pay');
+        if (canOpenFallback) {
+          launchTimeRef.current = Date.now();
+          waitingForReturn.current = true;
+          await Linking.openURL(`upi://pay?pa=${upiId}&pn=SubKo%20Admin&cu=INR`);
+          appOpened = true;
+        }
+      } catch { /* ignore */ }
+    }
+
+    if (!appOpened) {
+      Alert.alert(
+        'Google Pay Not Found',
+        `Google Pay (GPay) app does not seem to be installed on your device.\n\nUPI ID "${upiId}" has been copied to your clipboard. Open Google Pay manually to complete the payment.`,
+        [
+          { text: 'I Paid — Submit UTR', onPress: () => showPaymentModal() },
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
     }
   };
+
 
   const closePayModal = () => {
     Animated.parallel([
@@ -775,7 +869,7 @@ export default function WalletScreen({ navigation }: any) {
       Alert.alert('Screenshot Required', 'Please upload a screenshot of your payment receipt for verification.');
       return;
     }
-    const amt = parseInt(detectedAmount || purchaseAmount, 10);
+    const amt = parseInt(detectedAmount, 10);
     if (isNaN(amt) || amt < 50) {
       Alert.alert('Invalid Amount', 'Minimum payment is ₹50.');
       return;
@@ -796,9 +890,20 @@ export default function WalletScreen({ navigation }: any) {
       }
 
       // Submit payment with BOTH UTR and screenshot
-      await axios.post(
+      const payload: any = { 
+        amount: amt, 
+        utr_number: utr, 
+        screenshot: proofScreenshot, 
+        auto_detected: smsAutoDetected 
+      };
+      if (smsRaw) {
+        payload.sms_raw = smsRaw;
+        payload.sms_timestamp_ms = smsTimestampMs;
+      }
+
+      const response = await axios.post(
         `${API_URL}/api/payments/manual`,
-        { amount: amt, utr_number: utr, screenshot: proofScreenshot, auto_detected: smsAutoDetected },
+        payload,
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
@@ -832,41 +937,7 @@ export default function WalletScreen({ navigation }: any) {
     }
   };
 
-  const handleManualPayment = async () => {
-    if (parseInt(purchaseAmount, 10) < 50) {
-      Alert.alert('Minimum Amount', 'Minimum purchase is 50 points.');
-      return;
-    }
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
-      Alert.alert('Permission Required', 'Allow photo access to upload payment proof.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.7,
-      base64: true,
-    });
-    if (result.canceled) return;
 
-    setUploading(true);
-    try {
-      const base64Img = `data:image/jpg;base64,${result.assets[0].base64}`;
-      await axios.post(`${API_URL}/api/payments/manual`, {
-        screenshot: base64Img,
-        amount: parseInt(purchaseAmount, 10),
-        utr_number: utrNumber || undefined,
-      }, { headers: { Authorization: `Bearer ${token}` } });
-      Alert.alert('Submitted', 'Payment proof sent. Points credited after admin review.');
-      setUtrNumber('');
-      await fetchTransactions();
-    } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.error || 'Upload failed.');
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleSwapPress = () => {
     Animated.sequence([
@@ -894,66 +965,14 @@ export default function WalletScreen({ navigation }: any) {
       >
         <BalanceCard points={user?.points || 0} email={user?.email} />
 
+        {/* ─── Step-by-Step Payment Guide ───────────────────────────── */}
+        <PaymentStepsGuide />
+
         {/* ─── Pending Payment Banner ─────────────────────────────────── */}
         {pendingPaymentCount > 0 && (
           <PendingPaymentBanner count={pendingPaymentCount} />
         )}
 
-
-        <View style={styles.transSection}>
-          <Text style={styles.transTitle}>{COPY.wallet.topUpTitle}</Text>
-
-          {/* FROM INPUT BOX */}
-          <Text style={styles.swapInputLabel}>From</Text>
-          <View style={styles.swapInputRow}>
-            <AppTextInput
-              variant="flat"
-              style={styles.swapTextInput}
-              value={purchaseAmount}
-              onChangeText={(t) => setPurchaseAmount(t.replace(/[^0-9]/g, ''))}
-              keyboardType="numeric"
-              placeholder="100"
-            />
-            <View style={styles.swapCurrencyPill}>
-              <Text style={styles.swapCurrencyText}>INR</Text>
-              <Ionicons name="chevron-down" size={12} color={colors.textPrimary} style={{ marginLeft: 4 }} />
-            </View>
-          </View>
-          <Text style={styles.swapHelperText}>{COPY.wallet.topUpHint}</Text>
-
-          {/* SWAP ICON DIVIDER */}
-          <View style={styles.swapDividerRow}>
-            <View style={styles.swapDividerLine} />
-            <AnimatedPressable onPress={handleSwapPress} style={styles.swapArrowCircle}>
-              <Animated.View style={{ transform: [{ rotate: swapSpin }] }}>
-                <Ionicons name="swap-vertical" size={16} color={colors.white} />
-              </Animated.View>
-            </AnimatedPressable>
-            <View style={styles.swapDividerLine} />
-          </View>
-
-          {/* TO INPUT BOX */}
-          <Text style={styles.swapInputLabel}>To</Text>
-          <View style={styles.swapInputRow}>
-            <Text style={styles.swapTextDisplay}>{purchaseAmount || '0'}</Text>
-            <View style={styles.swapCurrencyPill}>
-              <Text style={styles.swapCurrencyText}>BUG's</Text>
-              <Ionicons name="chevron-down" size={12} color={colors.textPrimary} style={{ marginLeft: 4 }} />
-            </View>
-          </View>
-          <Text style={styles.swapHelperText}>Credited after admin approval</Text>
-        </View>
-
-        {/* ─── Payment Warning Banner ──────────────────────────────── */}
-        <View style={styles.warningBanner}>
-          <Ionicons name="warning-outline" size={18} color="#92400e" style={{ flexShrink: 0, marginTop: 1 }} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.warningTitle}>Important Payment Notice</Text>
-            <Text style={styles.warningText}>
-              After paying via UPI, you MUST submit UTR number + payment screenshot below. BUG's are credited only after admin verification (usually within a few hours).
-            </Text>
-          </View>
-        </View>
 
         {/* ─── UPI Handle Selector & Copy Box ──────────────────────── */}
         <View style={styles.upiCardContainer}>
@@ -1003,9 +1022,9 @@ export default function WalletScreen({ navigation }: any) {
         {CASHFREE_ENABLED ? (
           <>
             <CashfreePayButton
-              amount={purchaseAmount}
+              amount={''}
               onPress={handleCashfreePayment}
-              disabled={parseInt(purchaseAmount || '0', 10) < 50 || cashfreeLoading}
+              disabled={cashfreeLoading}
             />
             {cashfreeLoading && (
               <View style={{ alignItems: 'center', marginTop: spacing[2], marginBottom: spacing[4] }}>
@@ -1020,10 +1039,9 @@ export default function WalletScreen({ navigation }: any) {
             </Text>
           </>
         ) : (
-          <SwipeToPay
-            amount={purchaseAmount}
-            onSwipeComplete={handlePayViaApp}
-            disabled={parseInt(purchaseAmount || '0', 10) < 50}
+          <TapToPay
+            onPress={handlePayViaApp}
+            disabled={false}
           />
         )}
 
@@ -1033,20 +1051,30 @@ export default function WalletScreen({ navigation }: any) {
         ) : transactions.length === 0 ? (
           <Text style={styles.emptyTxt}>No transactions yet.</Text>
         ) : (
-          transactions.slice(0, 10).map((tx: any, i: number) => (
-            <StaggeredItem key={tx.id} index={i} style={styles.txRow}>
-              <View style={styles.txIcon}>
-                <Ionicons name="wallet-outline" size={18} color={colors.white} />
-              </View>
-              <View style={styles.txInfo}>
-                <Text style={styles.txType}>{tx.type}</Text>
-                <Text style={styles.txDesc} numberOfLines={1}>{tx.description}</Text>
-              </View>
-              <Text style={[styles.txAmount, tx.amount > 0 ? styles.txPos : styles.txNeg]}>
-                {tx.amount > 0 ? '+' : ''}{tx.amount}
-              </Text>
-            </StaggeredItem>
-          ))
+          transactions.slice(0, 10).map((tx: any, i: number) => {
+            const TX_ICONS: Record<string, any> = {
+              earn: 'wallet-outline',
+              reward: 'gift-outline',
+              topup: 'cash-outline',
+              spend: 'heart-outline',
+              refund: 'return-down-back-outline',
+            };
+            const isPositive = tx.amount > 0;
+            return (
+              <StaggeredItem key={tx.id} index={i} style={styles.txRow}>
+                <View style={styles.txIcon}>
+                  <Ionicons name={TX_ICONS[tx.type] || 'ellipse-outline'} size={18} color={colors.white} />
+                </View>
+                <View style={styles.txInfo}>
+                  <Text style={styles.txType}>{tx.type}</Text>
+                  <Text style={styles.txDesc} numberOfLines={1}>{tx.description}</Text>
+                </View>
+                <Text style={[styles.txAmount, isPositive ? styles.txPos : styles.txNeg]}>
+                  {isPositive ? '+' : '-'}{Math.abs(tx.amount)}
+                </Text>
+              </StaggeredItem>
+            );
+          })
         )}
       </ScrollView>
 
@@ -1125,9 +1153,9 @@ export default function WalletScreen({ navigation }: any) {
               <View style={styles.modalPayIcon}>
                 <Ionicons name="card-outline" size={28} color={colors.black} />
               </View>
-              <Text style={styles.modalTitle}>Submit Payment Proof</Text>
+              <Text style={styles.modalTitle}>Save Payment Record</Text>
               <Text style={styles.modalSubtitle}>
-                Both UTR number and a payment screenshot are required for verification.
+                Your BUG's will be added automatically when we detect your payment SMS.{"\n"}UTR + screenshot is optional — for admin audit only.
               </Text>
 
               <View style={styles.modalUtrBox}>
@@ -1137,7 +1165,7 @@ export default function WalletScreen({ navigation }: any) {
                   value={detectedAmount}
                   onChangeText={(t) => setDetectedAmount(t.replace(/[^0-9]/g, ''))}
                   keyboardType="numeric"
-                  placeholder={purchaseAmount}
+                  placeholder="100"
                   placeholderTextColor={colors.textMuted}
                 />
               </View>
@@ -1190,7 +1218,7 @@ export default function WalletScreen({ navigation }: any) {
             />
           ) : (
             <Text style={styles.modalScreenshotHint}>
-              Required — take a screenshot of the payment confirmation from your UPI or banking app
+              Optional — screenshot is only needed for admin audit. Your BUG's are added automatically via SMS.
             </Text>
           )}
 
@@ -1522,8 +1550,8 @@ const styles = StyleSheet.create({
   txType: { fontFamily, fontSize: typography.size.sm, fontWeight: typography.weight.bold, color: colors.textPrimary, textTransform: 'capitalize' },
   txDesc: { fontFamily, fontSize: typography.size.xs, color: colors.textMuted, marginTop: 2 },
   txAmount: { fontFamily, fontSize: typography.size.lg, fontWeight: typography.weight.bold },
-  txPos: { color: colors.textPrimary },
-  txNeg: { color: colors.pink },
+  txPos: { color: '#16a34a' }, // green — topup / earn / reward / refund
+  txNeg: { color: '#dc2626' }, // red — spend
   exchangePayBtn: {
     flexDirection: 'row',
     alignItems: 'center',

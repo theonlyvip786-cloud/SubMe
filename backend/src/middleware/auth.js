@@ -71,6 +71,21 @@ const authMiddleware = async (req, res, next) => {
         req.user = verifiedUser;
         req.isAdmin = isAdminEmail(verifiedUser.email);
 
+        // Auto-ensure user row in public.users table so foreign key references (task_sessions, submissions) never fail.
+        if (verifiedUser.id) {
+            try {
+                const refCode = 'SUB' + verifiedUser.id.substring(0, 5).toUpperCase();
+                await supabase.from('users').upsert({
+                    id: verifiedUser.id,
+                    email: verifiedUser.email || 'user@subko.app',
+                    username: (verifiedUser.email || 'user').split('@')[0],
+                    referral_code: refCode,
+                }, { onConflict: 'id', ignoreDuplicates: true });
+            } catch (_) {
+                // Ignore upsert errors if record already exists or username collides
+            }
+        }
+
         // Admin tokens may not have a users-table row; skip the banned check.
         if (!req.isAdmin) {
             const { data: userRow } = await supabase

@@ -15,7 +15,7 @@ import Y2KNote from '../theme/Y2KNote';
 import { AppTextInput, InputBox } from '../theme/inputs';
 
 export default function AdminUsersScreen({ navigation }: any) {
-    const { token, user } = useAuthStore();
+    const { token, user, setAdminMode } = useAuthStore();
     const [loading, setLoading] = useState(false);
     const [query, setQuery] = useState('');
     const [users, setUsers] = useState<any[]>([]);
@@ -34,13 +34,14 @@ export default function AdminUsersScreen({ navigation }: any) {
         }, [query])
     );
 
-    const searchUsers = async () => {
-        if (query.length < 2) { setUsers([]); return; }
+    const searchUsers = async (searchQuery?: string) => {
+        const q = searchQuery !== undefined ? searchQuery : query;
         setLoading(true);
         try {
-            const res = await axios.get(`${API_URL}/api/admin/users/search?q=${encodeURIComponent(query)}`, { headers: { Authorization: `Bearer ${token}` } });
-            setUsers(res.data);
-        } catch (e) { Alert.alert('Error', 'Search failed'); }
+            const qParam = q.trim().length >= 2 ? encodeURIComponent(q.trim()) : '';
+            const res = await axios.get(`${API_URL}/api/admin/users/search?q=${qParam}`, { headers: { Authorization: `Bearer ${token}` } });
+            setUsers(res.data || []);
+        } catch (e) { Alert.alert('Error', 'Failed to fetch users'); }
         finally { setLoading(false); setRefreshing(false); }
     };
 
@@ -101,6 +102,14 @@ export default function AdminUsersScreen({ navigation }: any) {
                 {/* Header */}
                 <View style={styles.header}>
                     <Text style={styles.headerTitle}>User Management</Text>
+                    <TouchableOpacity 
+                        style={styles.exitAdminBtn} 
+                        onPress={() => setAdminMode(false)}
+                        activeOpacity={0.8}
+                    >
+                        <Ionicons name="log-out-outline" size={14} color={colors.white} style={{ marginRight: 4 }} />
+                        <Text style={styles.exitAdminText}>Exit Admin</Text>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Main Content Area */}
@@ -122,13 +131,13 @@ export default function AdminUsersScreen({ navigation }: any) {
                                     placeholder="Search username or email..."
                                     value={query}
                                     onChangeText={setQuery}
-                                    onSubmitEditing={searchUsers}
+                                    onSubmitEditing={() => searchUsers()}
                                     returnKeyType="search"
                                 />
                                 {loading ? (
                                     <ActivityIndicator size="small" color={colors.black} />
                                 ) : query.length > 0 ? (
-                                    <TouchableOpacity onPress={() => { setQuery(''); setUsers([]); }}>
+                                    <TouchableOpacity onPress={() => { setQuery(''); searchUsers(''); }}>
                                         <Ionicons name="close-circle" size={18} color={colors.textMuted} />
                                     </TouchableOpacity>
                                 ) : null}
@@ -278,6 +287,21 @@ const styles = StyleSheet.create({
         fontSize: typography.size.xl,
         fontWeight: typography.weight.bold,
         color: colors.black,
+    },
+    exitAdminBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FF3B30',
+        paddingHorizontal: spacing[3],
+        paddingVertical: 6,
+        borderRadius: radii.full,
+        ...shadows.sm,
+    },
+    exitAdminText: {
+        fontFamily,
+        fontSize: typography.size.xs,
+        fontWeight: typography.weight.bold,
+        color: colors.white,
     },
     content: { flex: 1 },
     scrollContent: { paddingHorizontal: spacing[6], paddingBottom: 160 },

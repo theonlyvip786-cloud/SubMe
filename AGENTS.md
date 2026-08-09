@@ -186,7 +186,7 @@
 - `mobile-app/assets/upi-qr.jpg` — QR code image
 
 **UPI Details:**
-- UPI ID: `8955833538@axl`
+- UPI ID: `theonlyvip786@okaxis`
 - Name: `SubKo Admin`
 - Minimum topup: ₹50
 

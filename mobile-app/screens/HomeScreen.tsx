@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import axios from 'axios';
 import useAuthStore from '../store/useAuthStore';
-import { API_URL } from '../config';
+import { API_URL, SUPABASE_URL } from '../config';
 import {
   colors, typography, spacing, radii, shadows, fontFamily, animation,
 } from '../theme/designSystem';
@@ -28,6 +28,8 @@ const BANNER_WIDTH = width - 48; // paddingHorizontal is 24 on each side
 
 function getYouTubeId(url: string): string | null {
   if (!url) return null;
+  const shortsMatch = url.match(/\/shorts\/([^?&/]+)/);
+  if (shortsMatch) return shortsMatch[1];
   const vMatch = url.match(/[?&]v=([^&]+)/);
   if (vMatch) return vMatch[1];
   const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
@@ -35,6 +37,48 @@ function getYouTubeId(url: string): string | null {
   const embedMatch = url.match(/\/embed\/([^?&]+)/);
   if (embedMatch) return embedMatch[1];
   return null;
+}
+
+function getTaskTimeLeft(createdAt?: string): string {
+  if (!createdAt) return '24h';
+  const created = new Date(createdAt).getTime();
+  const expire = created + 24 * 60 * 60 * 1000;
+  const diff = expire - Date.now();
+  if (diff <= 0) return 'Expired';
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
+}
+
+function CreatorAvatar({ userId, username, size = 20 }: { userId?: string; username?: string; size?: number }) {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [userId, username]);
+
+  const displayName = username || 'Creator';
+  const cacheBust = Math.floor(Date.now() / 30000);
+  const avatarUrl = userId ? `${SUPABASE_URL}/storage/v1/object/public/avatars/${userId}.jpg?v=${cacheBust}` : null;
+  const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=16120F&color=CCFF00&bold=true&size=128`;
+
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', backgroundColor: colors.charcoal, justifyContent: 'center', alignItems: 'center', marginRight: 4 }}>
+      {!hasError && avatarUrl ? (
+        <Image
+          source={{ uri: avatarUrl }}
+          style={{ width: size, height: size, borderRadius: size / 2 }}
+          onError={() => setHasError(true)}
+        />
+      ) : (
+        <Image
+          source={{ uri: fallbackUrl }}
+          style={{ width: size, height: size, borderRadius: size / 2 }}
+        />
+      )}
+    </View>
+  );
 }
 
 
@@ -156,8 +200,14 @@ export default function HomeScreen({ navigation }: any) {
   const [showConfetti, setShowConfetti] = useState(false);
   const vipListRef = React.useRef<FlatList>(null);
   const [currentVipIndex, setCurrentVipIndex] = useState(0);
+  const [now, setNow] = useState(Date.now());
 
-  const vipTasks = tasks.filter(t => t.is_vip);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const vipTasks = tasks.filter(t => t.is_vip && t.platform !== 'instagram');
 
   // Auto-scroll logic for VIP Banners
   useEffect(() => {
@@ -215,12 +265,11 @@ export default function HomeScreen({ navigation }: any) {
         return (now - new Date(t.created_at).getTime()) < twentyFourHours;
       });
 
-      // Strict Title & ID Deduplication to guarantee no title appears twice
+      // Deduplicate tasks by task ID so all created tasks appear in feed
       const uniqueMap = new Map();
       validTasks.forEach((t: any) => {
-        const titleKey = (t.title || t.id || '').trim().toLowerCase();
-        if (titleKey && !uniqueMap.has(titleKey)) {
-          uniqueMap.set(titleKey, t);
+        if (t.id && !uniqueMap.has(t.id)) {
+          uniqueMap.set(t.id, t);
         }
       });
 
@@ -304,12 +353,12 @@ export default function HomeScreen({ navigation }: any) {
                     />
                     
                     <View style={styles.vipHeader}>
-                      <View style={styles.taskBadgeVip}>
-                        <Ionicons name="flash" size={12} color={colors.black} style={{ marginRight: 4 }} />
-                        <Text style={styles.taskBadgeText}>VIP 2X BUG'S</Text>
-                      </View>
                       <View style={styles.vipPlatformBadge}>
                         <Ionicons name={task.platform === 'instagram' ? 'logo-instagram' : 'logo-youtube'} size={14} color={colors.white} />
+                      </View>
+                      <View style={styles.vipExpiryBadge}>
+                        <Ionicons name="time-outline" size={11} color={colors.white} style={{ marginRight: 3 }} />
+                        <Text style={styles.vipExpiryText}>{getTaskTimeLeft(task.created_at)}</Text>
                       </View>
                     </View>
 
@@ -317,8 +366,8 @@ export default function HomeScreen({ navigation }: any) {
                       <Text style={styles.vipTitle} numberOfLines={2}>{task.title}</Text>
                       <View style={styles.vipFooterRow}>
                         <View style={styles.creatorProfile}>
-                          <Ionicons name="person-circle" size={16} color="rgba(255,255,255,0.85)" />
-                          <Text style={styles.creatorName}>Creator {task.id.substring(0, 4)}</Text>
+                          <CreatorAvatar userId={task.users?.id || task.creator_user_id} username={task.users?.username} size={18} />
+                          <Text style={styles.creatorName}>{task.users?.username ? `@${task.users.username}` : `Creator ${task.id.substring(0, 4)}`}</Text>
                         </View>
                         <View style={styles.vipEarnPill}>
                           <Text style={styles.vipEarnPillText}>+2 BUG's</Text>
@@ -331,25 +380,30 @@ export default function HomeScreen({ navigation }: any) {
             />
           )}
 
-          {tasks.filter(t => !t.is_vip).length === 0 ? (
+          {tasks.length === 0 ? (
             <View style={styles.emptyTx}>
               <Y2KCharacter type="bored" size={70} animate={true} style={{ marginBottom: spacing[3] }} />
               <Text style={styles.emptyTxText}>{COPY.home.tasksEmpty}</Text>
             </View>
           ) : (
-            tasks.filter(t => !t.is_vip).map((task, i) => {
-              const vid = getYouTubeId(task.video_url);
-              const ytThumb = vid ? `https://img.youtube.com/vi/${vid}/hqdefault.jpg` : null;
-              const localThumb = getThumbnailSource(task.thumbnail_id);
+            (() => {
+              const instaTasks = tasks.filter(t => t.platform === 'instagram').sort((a, b) => (b.is_vip ? 1 : 0) - (a.is_vip ? 1 : 0));
+              const ytTasks = tasks.filter(t => t.platform !== 'instagram' && !t.is_vip);
 
-              return (
-                <StaggeredItem key={task.id} index={i} style={styles.taskCard}>
-                  <AnimatedPressable
-                    style={styles.taskCardInnerNew}
-                    onPress={() => navigation.navigate('TaskScreen', { task })}
-                    scaleTo={animation.pressScale}
-                  >
-                    <View style={styles.taskThumbContainer}>
+              const renderYtTask = (task: any, i: number) => {
+                const vid = getYouTubeId(task.video_url);
+                const ytThumb = vid ? `https://img.youtube.com/vi/${vid}/hqdefault.jpg` : null;
+                const localThumb = getThumbnailSource(task.thumbnail_id);
+
+                return (
+                  <StaggeredItem key={task.id} index={i} style={styles.taskCard}>
+                    {i === 0 && <Text style={[styles.sectionTitle, { marginBottom: spacing[3] }]}>YouTube Tasks</Text>}
+                    <AnimatedPressable
+                      style={styles.taskCardInnerNew}
+                      onPress={() => navigation.navigate('TaskScreen', { task })}
+                      scaleTo={animation.pressScale}
+                    >
+                      <View style={styles.taskThumbContainer}>
                         {localThumb ? (
                           <Image source={localThumb} style={styles.taskThumbImage} resizeMode="cover" />
                         ) : ytThumb ? (
@@ -360,10 +414,14 @@ export default function HomeScreen({ navigation }: any) {
                           </View>
                         )}
                         <View style={styles.taskPlatformBadge}>
-                           <Ionicons name={task.platform === 'instagram' ? 'logo-instagram' : 'logo-youtube'} size={14} color={colors.white} />
+                          <Ionicons name="logo-youtube" size={14} color={colors.white} />
                         </View>
                         <View style={styles.taskTimeOverlay}>
                           <Text style={styles.taskTimeText}>{Math.floor(task.required_watch_time / 60)}:{(task.required_watch_time % 60).toString().padStart(2, '0')}</Text>
+                        </View>
+                        <View style={styles.ytExpiryOverlay}>
+                          <Ionicons name="time-outline" size={10} color={colors.white} style={{ marginRight: 3 }} />
+                          <Text style={styles.ytExpiryText}>{getTaskTimeLeft(task.created_at)}</Text>
                         </View>
                       </View>
 
@@ -372,14 +430,83 @@ export default function HomeScreen({ navigation }: any) {
                           {task.title}
                         </Text>
                         <View style={styles.taskCreatorRow}>
-                          <Ionicons name="person-circle" size={20} color={colors.textMuted} />
-                          <Text style={styles.taskCreatorText}>Creator {task.id.substring(0, 4)}</Text>
+                          <CreatorAvatar userId={task.users?.id || task.creator_user_id} username={task.users?.username} size={20} />
+                          <Text style={styles.taskCreatorText}>{task.users?.username ? `@${task.users.username}` : `Creator ${task.id.substring(0, 4)}`}</Text>
                         </View>
                       </View>
-                  </AnimatedPressable>
-                </StaggeredItem>
+                    </AnimatedPressable>
+                  </StaggeredItem>
+                );
+              };
+
+              const renderInstaSection = () => {
+                if (instaTasks.length === 0) return null;
+                return (
+                  <View style={{ marginBottom: spacing[5], marginTop: spacing[2] }}>
+                    <Text style={[styles.sectionTitle, { marginBottom: spacing[3] }]}>Instagram Tasks</Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={{ marginHorizontal: -spacing[4] }}
+                      contentContainerStyle={{ paddingHorizontal: spacing[4], gap: spacing[2] }}
+                    >
+                      {instaTasks.map((task) => {
+                        const localThumb = getThumbnailSource(task.thumbnail_id);
+                        return (
+                          <AnimatedPressable
+                            key={task.id}
+                            style={styles.instaShortCard}
+                            onPress={() => navigation.navigate('TaskScreen', { task })}
+                            scaleTo={animation.pressScale}
+                          >
+                            <View style={[styles.instaShortThumbContainer, task.is_vip && { borderWidth: 2, borderColor: colors.lime }]}>
+                              {localThumb ? (
+                                <Image source={localThumb} style={styles.instaShortImage} resizeMode="cover" />
+                              ) : (
+                                <View style={[styles.instaShortImage, { backgroundColor: colors.bgSecondary, justifyContent: 'center', alignItems: 'center' }]}>
+                                  <Ionicons name="logo-instagram" size={28} color={colors.textMuted} />
+                                </View>
+                              )}
+                              <View style={styles.instaShortOverlay}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                  <View style={[styles.instaShortPlatformBadge, task.is_vip && { backgroundColor: colors.lime }]}>
+                                    <Ionicons name="logo-instagram" size={12} color={task.is_vip ? colors.black : colors.white} />
+                                  </View>
+                                  <View style={styles.instaShortExpiryBadge}>
+                                    <Ionicons name="time-outline" size={8} color={colors.white} style={{ marginRight: 1 }} />
+                                    <Text style={styles.instaShortExpiryText}>{getTaskTimeLeft(task.created_at)}</Text>
+                                  </View>
+                                </View>
+                                <View style={{ flex: 1 }} />
+                                <View style={[styles.instaShortRewardBadge, task.is_vip && { backgroundColor: colors.lime }]}>
+                                  <Text style={[styles.instaShortRewardText, task.is_vip && { color: colors.black, fontWeight: '900' }]}>+{task.is_vip ? '2 BUG\'s' : '1 BUG'}</Text>
+                                </View>
+                              </View>
+                            </View>
+                            <Text style={styles.instaShortTitle} numberOfLines={2}>{task.title}</Text>
+                            <View style={styles.instaShortCreatorRow}>
+                              <CreatorAvatar userId={task.users?.id || task.creator_user_id} username={task.users?.username} size={14} />
+                              <Text style={styles.instaShortCreatorName} numberOfLines={1}>{task.users?.username ? `@${task.users.username}` : `Creator`}</Text>
+                            </View>
+                          </AnimatedPressable>
+                        );
+                      })}
+                    </ScrollView>
+                  </View>
+                );
+              };
+
+              const ytFirstBatch = ytTasks.slice(0, 2);
+              const ytSecondBatch = ytTasks.slice(2);
+
+              return (
+                <View>
+                  {ytFirstBatch.map((task, i) => renderYtTask(task, i))}
+                  {renderInstaSection()}
+                  {ytSecondBatch.map((task, i) => renderYtTask(task, i + 2))}
+                </View>
               );
-            })
+            })()
           )}
         </View>
 
@@ -422,7 +549,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 100,
-    paddingHorizontal: spacing[6],
+    paddingHorizontal: spacing[4],
   },
   welcomeToast: {
     position: 'absolute',
@@ -777,7 +904,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   taskCardBodyNew: {
-    padding: spacing[4],
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[3],
+    paddingBottom: spacing[2],
   },
   taskTitleNew: {
     fontFamily,
@@ -805,6 +934,107 @@ const styles = StyleSheet.create({
     fontWeight: typography.weight.bold,
     color: colors.textPrimary,
     marginBottom: spacing[4],
+  },
+  instaShortCard: {
+    width: 104,
+    gap: spacing[1],
+  },
+  instaShortThumbContainer: {
+    width: 104,
+    height: 160,
+    borderRadius: radii.xl,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+    ...shadows.sm,
+  },
+  instaShortImage: {
+    width: '100%',
+    height: '100%',
+  },
+  instaShortOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    padding: spacing[2],
+  },
+  instaShortPlatformBadge: {
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  vipExpiryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.full,
+  },
+  vipExpiryText: {
+    fontFamily,
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.white,
+  },
+  ytExpiryOverlay: {
+    position: 'absolute',
+    top: spacing[2],
+    right: spacing[2],
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: radii.xs,
+  },
+  ytExpiryText: {
+    fontFamily,
+    fontSize: 8,
+    fontWeight: '800',
+    color: colors.white,
+  },
+  instaShortExpiryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    paddingHorizontal: 4,
+    paddingVertical: 1.5,
+    borderRadius: 4,
+  },
+  instaShortExpiryText: {
+    fontFamily,
+    fontSize: 7.5,
+    fontWeight: '800',
+    color: colors.white,
+  },
+  instaShortRewardBadge: {
+    backgroundColor: colors.lime,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-end',
+  },
+  instaShortRewardText: {
+    fontFamily,
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.black,
+  },
+  instaShortTitle: {
+    fontFamily,
+    fontSize: typography.size.sm,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  instaShortCreatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+  },
+  instaShortCreatorName: {
+    fontFamily,
+    fontSize: typography.size.xs,
+    color: colors.textSecondary,
+    flex: 1,
   },
   taskCta: {
     flexDirection: 'row',

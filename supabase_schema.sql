@@ -335,7 +335,7 @@ BEGIN
         v_promo.title,
         v_promo.video_url,
         v_promo.channel_url,
-        10,
+        CASE WHEN COALESCE(v_promo.is_vip, FALSE) THEN 2 ELSE 1 END,
         COALESCE(v_promo.is_vip, FALSE),
         COALESCE(v_promo.platform, 'youtube'),
         180,

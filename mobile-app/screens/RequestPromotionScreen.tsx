@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import useAuthStore from '../store/useAuthStore';
-import { API_URL } from '../config';
+import { API_URL, SUPABASE_URL } from '../config';
 import { colors, typography, spacing, radii, shadows, fontFamily } from '../theme/designSystem';
 import { AnimatedPressable } from '../theme/animations';
 import { AppTextInput, InputBox } from '../theme/inputs';
@@ -18,6 +18,36 @@ import Y2KAlertPopup from '../theme/Y2KAlertPopup';
 import { THUMBNAILS, getThumbnailSource } from '../assets/thumbnails';
 
 const { width: screenWidth } = Dimensions.get('window');
+
+function CreatorAvatar({ userId, username, size = 18 }: { userId?: string; username?: string; size?: number }) {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [userId, username]);
+
+  const displayName = username || 'You';
+  const cacheBust = Math.floor(Date.now() / 30000);
+  const avatarUrl = userId ? `${SUPABASE_URL}/storage/v1/object/public/avatars/${userId}.jpg?v=${cacheBust}` : null;
+  const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=16120F&color=CCFF00&bold=true&size=128`;
+
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', backgroundColor: colors.charcoal, justifyContent: 'center', alignItems: 'center', marginRight: 4 }}>
+      {!hasError && avatarUrl ? (
+        <Image
+          source={{ uri: avatarUrl }}
+          style={{ width: size, height: size, borderRadius: size / 2 }}
+          onError={() => setHasError(true)}
+        />
+      ) : (
+        <Image
+          source={{ uri: fallbackUrl }}
+          style={{ width: size, height: size, borderRadius: size / 2 }}
+        />
+      )}
+    </View>
+  );
+}
 const THUMB_ITEM_SIZE = (screenWidth - 48 - 16 * 2) / 3;
 
 const COST = COPY.promotionCost;
@@ -25,15 +55,17 @@ const COST = COPY.promotionCost;
 export default function RequestPromotionScreen({ navigation }: any) {
     const { token, updateUser, user } = useAuthStore();
     const [livePoints, setLivePoints] = useState<number | null>(null);
+    const currentPoints = livePoints ?? user?.points ?? 0;
     const [step, setStep] = useState(1);
     const [platform, setPlatform] = useState<'youtube' | 'instagram'>('youtube');
     const [isVip, setIsVip] = useState(false);
+    const [videoTitle, setVideoTitle] = useState('');
     const [channelLink, setChannelLink] = useState('');
     const [videoLink, setVideoLink] = useState('');
     const [mcqQuestion, setMcqQuestion] = useState('');
     const [options, setOptions] = useState(['', '', '', '']);
     const [correctIndex, setCorrectIndex] = useState<number | null>(null);
-    const [thumbnailId, setThumbnailId] = useState<string>('thumb_1');
+    const [thumbnailId, setThumbnailId] = useState<string>(THUMBNAILS[0]?.id || '');
     const [submitting, setSubmitting] = useState(false);
     const [showSuccessPopup, setShowSuccessPopup] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
@@ -42,7 +74,17 @@ export default function RequestPromotionScreen({ navigation }: any) {
 
     const handlePopupClose = () => {
         setShowSuccessPopup(false);
-        navigation.goBack();
+        // Reset all form state for a fresh start
+        setStep(1);
+        setPlatform('youtube');
+        setIsVip(false);
+        setVideoTitle('');
+        setChannelLink('');
+        setVideoLink('');
+        setMcqQuestion('');
+        setOptions(['', '', '', '']);
+        setCorrectIndex(null);
+        setThumbnailId('thumb_1');
     };
 
     const onRefresh = async () => {
@@ -72,6 +114,20 @@ export default function RequestPromotionScreen({ navigation }: any) {
         return unsub;
     }, [navigation, token]);
 
+    useEffect(() => {
+        if (platform === 'instagram') {
+            if (!thumbnailId || !thumbnailId.startsWith('insta')) {
+                const firstInsta = THUMBNAILS.find(t => t.id.startsWith('insta'))?.id || 'insta_v1';
+                setThumbnailId(firstInsta);
+            }
+        } else {
+            if (!thumbnailId || thumbnailId.startsWith('insta')) {
+                const firstYt = THUMBNAILS.find(t => !t.id.startsWith('insta'))?.id || '02eec4d64cb0f4d57accc63cf8e8c7b2';
+                setThumbnailId(firstYt);
+            }
+        }
+    }, [platform]);
+
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
     const slideAnim = React.useRef(new Animated.Value(16)).current;
 
@@ -85,16 +141,16 @@ export default function RequestPromotionScreen({ navigation }: any) {
     }, [step]);
 
     const canProceedStep1 = () => {
-        if ((livePoints ?? 0) < currentCost) {
+        if (currentPoints < currentCost) {
             Alert.alert('Insufficient Balance', `You need ${currentCost} BUG's to create this promotion.`);
             return false;
         }
-        if (!channelLink.trim()) {
-            Alert.alert('Missing URL', `Please enter your ${platform === 'youtube' ? 'YouTube Channel' : 'Instagram Profile'} URL.`);
+        if (!videoTitle.trim()) {
+            Alert.alert('Video Title Required', 'Please enter the title of your video or channel.');
             return false;
         }
-        if (platform === 'youtube' && !videoLink.trim()) {
-            Alert.alert('Missing URL', 'Please enter your YouTube Video URL.');
+        if (!videoLink.trim()) {
+            Alert.alert('Missing URL', `Please enter your ${platform === 'youtube' ? 'YouTube Video' : 'Instagram Reel'} URL.`);
             return false;
         }
         return true;
@@ -124,9 +180,9 @@ export default function RequestPromotionScreen({ navigation }: any) {
         setSubmitting(true);
         try {
             await axios.post(`${API_URL}/api/promotions/request`, {
-                title: `${platform === 'youtube' ? 'YouTube' : 'Instagram'} Channel Promotion`,
-                videoUrl: videoLink.trim() || channelLink.trim(),
-                channelUrl: channelLink.trim(),
+                title: videoTitle.trim() || `${platform === 'youtube' ? 'YouTube' : 'Instagram'} Channel Promotion`,
+                videoUrl: videoLink.trim(),
+                channelUrl: channelLink.trim() || videoLink.trim(),
                 mcqQuestion,
                 mcqOptions: options,
                 mcqAnswer: options[correctIndex!],
@@ -134,6 +190,11 @@ export default function RequestPromotionScreen({ navigation }: any) {
                 platform,
                 thumbnailId
             }, { headers: { Authorization: `Bearer ${token}` } });
+
+            const updatedBalance = Math.max(0, currentPoints - currentCost);
+            setLivePoints(updatedBalance);
+            updateUser({ points: updatedBalance });
+            onRefresh();
 
             setShowSuccessPopup(true);
         } catch (error: any) {
@@ -151,7 +212,7 @@ export default function RequestPromotionScreen({ navigation }: any) {
                     <Text style={styles.headerTitle}>Promote Content</Text>
                     <View style={styles.coinsBadge}>
                         <Y2KNote size={14} style={{ marginRight: 6 }} />
-                        <Text style={styles.coinsText}>{(livePoints ?? 0).toLocaleString()}</Text>
+                        <Text style={styles.coinsText}>{currentPoints.toLocaleString()}</Text>
                     </View>
                 </View>
 
@@ -252,7 +313,11 @@ export default function RequestPromotionScreen({ navigation }: any) {
                                             styles.platformCard,
                                             platform === 'youtube' && styles.platformCardYtActive
                                         ]}
-                                        onPress={() => setPlatform('youtube')}
+                                        onPress={() => {
+                                            setPlatform('youtube');
+                                            const ytThumb = THUMBNAILS.find(t => !t.id.startsWith('insta'));
+                                            if (ytThumb) setThumbnailId(ytThumb.id);
+                                        }}
                                         scaleTo={0.97}
                                     >
                                         <Ionicons name="logo-youtube" size={22} color={platform === 'youtube' ? '#FF0000' : colors.textMuted} style={{ marginRight: 8 }} />
@@ -263,7 +328,11 @@ export default function RequestPromotionScreen({ navigation }: any) {
                                             styles.platformCard,
                                             platform === 'instagram' && styles.platformCardInstaActive
                                         ]}
-                                        onPress={() => setPlatform('instagram')}
+                                        onPress={() => {
+                                            setPlatform('instagram');
+                                            const instaThumb = THUMBNAILS.find(t => t.id.startsWith('insta'));
+                                            if (instaThumb) setThumbnailId(instaThumb.id);
+                                        }}
                                         scaleTo={0.97}
                                     >
                                         <Ionicons name="logo-instagram" size={22} color={platform === 'instagram' ? '#E1306C' : colors.textMuted} style={{ marginRight: 8 }} />
@@ -320,7 +389,23 @@ export default function RequestPromotionScreen({ navigation }: any) {
                                     </AnimatedPressable>
                                 </View>
 
-                                {/* URL Inputs */}
+                                {/* Video Title Input */}
+                                <Text style={styles.sectionLabel}>Video / Channel Title</Text>
+                                <InputBox style={{ marginBottom: spacing[4] }}>
+                                    <Ionicons name="text-outline" size={18} color={colors.charcoal} style={{ marginRight: spacing[3] }} />
+                                    <AppTextInput
+                                        variant="flat"
+                                        style={styles.input}
+                                        numberOfLines={1}
+                                        placeholder={platform === 'youtube' ? 'My Awesome YouTube Channel' : 'My Instagram Page Name'}
+                                        value={videoTitle}
+                                        onChangeText={setVideoTitle}
+                                        autoCapitalize="words"
+                                        maxLength={80}
+                                    />
+                                </InputBox>
+
+                                {/* Channel URL Input */}
                                 <Text style={styles.sectionLabel}>
                                     {platform === 'youtube' ? 'YouTube Channel URL (Subscribe Target)' : 'Instagram Profile URL'}
                                 </Text>
@@ -338,24 +423,24 @@ export default function RequestPromotionScreen({ navigation }: any) {
                                     />
                                 </InputBox>
 
-                                {platform === 'youtube' && (
-                                    <>
-                                        <Text style={styles.sectionLabel}>YouTube Video URL (In-App Player)</Text>
-                                        <InputBox style={{ marginBottom: spacing[4] }}>
-                                            <Ionicons name="play-circle-outline" size={18} color="#FF0000" style={{ marginRight: spacing[3] }} />
-                                            <AppTextInput
-                                                variant="flat"
-                                                style={styles.input}
-                                                numberOfLines={1}
-                                                placeholder="youtube.com/watch?v=..."
-                                                value={videoLink}
-                                                onChangeText={setVideoLink}
-                                                autoCapitalize="none"
-                                                keyboardType="url"
-                                            />
-                                        </InputBox>
-                                    </>
-                                )}
+                                <>
+                                    <Text style={styles.sectionLabel}>
+                                        {platform === 'youtube' ? 'YouTube Video URL (In-App Player)' : 'Instagram Reel URL (In-App Player)'}
+                                    </Text>
+                                    <InputBox style={{ marginBottom: spacing[4] }}>
+                                        <Ionicons name={platform === 'youtube' ? 'play-circle-outline' : 'videocam-outline'} size={18} color={platform === 'youtube' ? '#FF0000' : '#E1306C'} style={{ marginRight: spacing[3] }} />
+                                        <AppTextInput
+                                            variant="flat"
+                                            style={styles.input}
+                                            numberOfLines={1}
+                                            placeholder={platform === 'youtube' ? "youtube.com/watch?v=..." : "instagram.com/reel/..."}
+                                            value={videoLink}
+                                            onChangeText={setVideoLink}
+                                            autoCapitalize="none"
+                                            keyboardType="url"
+                                        />
+                                    </InputBox>
+                                </>
 
                                 {/* Promotion Guidelines */}
                                 <Text style={styles.sectionTitle}>Campaign Guidelines</Text>
@@ -460,20 +545,19 @@ export default function RequestPromotionScreen({ navigation }: any) {
                         ) : (
                             <>
                                 {/* Step 3: Banner & Live Preview */}
-                                <Text style={styles.sectionLabel}>Choose Task Banner Thumbnail</Text>
-                                <View style={styles.thumbGrid}>
-                                    {THUMBNAILS.map(thumb => {
+                                <Text style={styles.sectionLabel}>Campaign Banner Image ({THUMBNAILS.filter(t => platform === 'instagram' ? t.id.startsWith('insta') : !t.id.startsWith('insta')).length} Available)</Text>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing[4] }}>
+                                    {THUMBNAILS.filter(t => platform === 'instagram' ? t.id.startsWith('insta') : !t.id.startsWith('insta')).map(thumb => {
                                         const isSelected = thumbnailId === thumb.id;
                                         return (
                                             <TouchableOpacity
                                                 key={thumb.id}
                                                 style={[
                                                     styles.thumbGridItem,
-                                                    { width: THUMB_ITEM_SIZE, height: THUMB_ITEM_SIZE * 0.65 },
-                                                    isSelected && styles.thumbGridItemSelected
+                                                    isSelected && styles.thumbGridItemSelected,
+                                                    platform === 'instagram' ? { width: 90, height: 145 } : { width: 140, height: 90 }
                                                 ]}
                                                 onPress={() => setThumbnailId(thumb.id)}
-                                                activeOpacity={0.75}
                                             >
                                                 <Image
                                                     source={thumb.source}
@@ -490,37 +574,71 @@ export default function RequestPromotionScreen({ navigation }: any) {
                                             </TouchableOpacity>
                                         );
                                     })}
-                                </View>
+                                </ScrollView>
 
                                 {/* Live Task Card Preview */}
                                 <Text style={styles.sectionLabel}>Live Home Screen Card Preview</Text>
-                                <View style={styles.taskCardPreview}>
-                                    <View style={styles.taskThumbContainerPreview}>
-                                        <Image source={getThumbnailSource(thumbnailId)} style={styles.taskThumbImagePreview} resizeMode="cover" />
-                                        <View style={styles.taskPlatformBadgePreview}>
-                                            <Ionicons name={platform === 'instagram' ? 'logo-instagram' : 'logo-youtube'} size={14} color={colors.white} />
-                                        </View>
-                                        <View style={styles.taskTimeOverlayPreview}>
-                                            <Text style={styles.taskTimeTextPreview}>{platform === 'instagram' ? 'REEL' : '3:00'}</Text>
+                                {platform === 'instagram' ? (
+                                    <View style={{ alignItems: 'center', marginVertical: spacing[3] }}>
+                                        <View style={styles.instaShortCardPreview}>
+                                            <View style={styles.instaShortThumbContainerPreview}>
+                                                {getThumbnailSource(thumbnailId) ? (
+                                                    <Image source={getThumbnailSource(thumbnailId)} style={styles.instaShortImagePreview} resizeMode="cover" />
+                                                ) : (
+                                                    <View style={[styles.instaShortImagePreview, { backgroundColor: '#121212' }]} />
+                                                )}
+                                                <View style={styles.instaShortOverlayPreview}>
+                                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                                        <View style={styles.instaShortPlatformBadgePreview}>
+                                                            <Ionicons name="logo-instagram" size={12} color={colors.white} />
+                                                        </View>
+                                                        <View style={styles.instaShortExpiryBadgePreview}>
+                                                            <Ionicons name="time-outline" size={8} color={colors.white} style={{ marginRight: 1 }} />
+                                                            <Text style={styles.instaShortExpiryTextPreview}>24h</Text>
+                                                        </View>
+                                                    </View>
+                                                    <View style={{ flex: 1 }} />
+                                                    <View style={styles.instaShortRewardBadgePreview}>
+                                                        <Text style={styles.instaShortRewardTextPreview}>+{isVip ? "2 BUG's" : "1 BUG"}</Text>
+                                                    </View>
+                                                </View>
+                                            </View>
+                                            <Text style={styles.instaShortTitlePreview} numberOfLines={2}>{videoTitle || 'Instagram Reel Title'}</Text>
+                                            <View style={styles.instaShortCreatorRowPreview}>
+                                                <CreatorAvatar userId={user?.id} username={user?.username} size={14} />
+                                                <Text style={styles.instaShortCreatorNamePreview} numberOfLines={1}>@{user?.username || 'You'}</Text>
+                                            </View>
                                         </View>
                                     </View>
-                                    <View style={styles.taskCardBodyPreview}>
-                                        <Text style={styles.taskTitlePreview} numberOfLines={1}>
-                                            {platform === 'youtube' ? 'YouTube' : 'Instagram'} Channel Promotion
-                                        </Text>
-                                        <View style={styles.previewFooterRow}>
-                                            <View style={styles.taskCreatorRow}>
-                                                <Ionicons name="person-circle" size={18} color={colors.textMuted} />
-                                                <Text style={styles.taskCreatorText}>Creator You</Text>
+                                ) : (
+                                    <View style={styles.taskCardPreview}>
+                                        <View style={styles.taskThumbContainerPreview}>
+                                            <Image source={getThumbnailSource(thumbnailId)} style={styles.taskThumbImagePreview} resizeMode="cover" />
+                                            <View style={styles.taskPlatformBadgePreview}>
+                                                <Ionicons name="logo-youtube" size={14} color={colors.white} />
                                             </View>
-                                            <View style={[styles.rewardBadgePill, isVip && { backgroundColor: colors.yellow }]}>
-                                                <Text style={[styles.rewardBadgePillText, isVip && { color: colors.black }]}>
-                                                    +{isVip ? 2 : 1} BUG's
-                                                </Text>
+                                            <View style={styles.taskTimeOverlayPreview}>
+                                                <Text style={styles.taskTimeTextPreview}>3:00</Text>
+                                            </View>
+                                        </View>
+                                        <View style={styles.taskCardBodyPreview}>
+                                            <Text style={styles.taskTitlePreview} numberOfLines={1}>
+                                                {videoTitle || 'YouTube Video Promotion'}
+                                            </Text>
+                                            <View style={styles.previewFooterRow}>
+                                                <View style={styles.taskCreatorRow}>
+                                                    <CreatorAvatar userId={user?.id} username={user?.username} size={18} />
+                                                    <Text style={styles.taskCreatorText}>@{user?.username || 'You'}</Text>
+                                                </View>
+                                                <View style={[styles.rewardBadgePill, isVip && { backgroundColor: colors.yellow }]}>
+                                                    <Text style={[styles.rewardBadgePillText, isVip && { color: colors.black }]}>
+                                                        +{isVip ? 2 : 1} BUG's
+                                                    </Text>
+                                                </View>
                                             </View>
                                         </View>
                                     </View>
-                                </View>
+                                )}
 
                                 <View style={styles.footerRow}>
                                     <TouchableOpacity style={styles.backBtnTxt} onPress={() => setStep(2)}>
@@ -551,8 +669,8 @@ export default function RequestPromotionScreen({ navigation }: any) {
                 onClose={handlePopupClose}
                 characterType="joyful"
                 title="Promotion Published!"
-                description="Your promotion task has been successfully created and published! Creators can now view and execute your task."
-                actionText="Awesome!"
+                description={`Your promotion task is now LIVE in the task feed! Creators can now view and execute your task. Your ${currentCost} BUG's have been deducted.`}
+                actionText="Got it!"
             />
         </SafeAreaView>
     );
@@ -1179,6 +1297,79 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(0,0,0,0.08)',
         marginBottom: spacing[4],
         ...shadows.sm,
+    },
+    instaShortCardPreview: {
+        width: 114,
+        gap: spacing[1],
+        alignItems: 'stretch',
+    },
+    instaShortThumbContainerPreview: {
+        width: 114,
+        height: 175,
+        borderRadius: radii.xl,
+        overflow: 'hidden',
+        backgroundColor: '#000',
+        ...shadows.sm,
+    },
+    instaShortImagePreview: {
+        width: '100%',
+        height: '100%',
+    },
+    instaShortOverlayPreview: {
+        ...StyleSheet.absoluteFillObject,
+        padding: spacing[2],
+    },
+    instaShortPlatformBadgePreview: {
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        padding: 4,
+        borderRadius: 8,
+        alignSelf: 'flex-start',
+    },
+    instaShortExpiryBadgePreview: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.65)',
+        paddingHorizontal: 4,
+        paddingVertical: 1.5,
+        borderRadius: 4,
+    },
+    instaShortExpiryTextPreview: {
+        fontFamily,
+        fontSize: 7.5,
+        fontWeight: '800',
+        color: colors.white,
+    },
+    instaShortRewardBadgePreview: {
+        backgroundColor: colors.lime,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+        alignSelf: 'flex-end',
+    },
+    instaShortRewardTextPreview: {
+        fontFamily,
+        fontSize: 10,
+        fontWeight: '800',
+        color: colors.black,
+    },
+    instaShortTitlePreview: {
+        fontFamily,
+        fontSize: 11,
+        fontWeight: '700',
+        color: colors.textPrimary,
+        lineHeight: 14,
+        marginTop: 4,
+    },
+    instaShortCreatorRowPreview: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    instaShortCreatorNamePreview: {
+        fontFamily,
+        fontSize: 10,
+        color: colors.textMuted,
+        fontWeight: '600',
     },
     taskThumbContainerPreview: {
         width: '100%',

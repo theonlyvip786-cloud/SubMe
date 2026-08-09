@@ -5,52 +5,53 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# Environment variables
+# Environment variables & secrets (CRITICAL: NEVER COMMIT REAL SECRETS)
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+*.env
+backend/.env
+mobile-app/.env
 
-# Build outputs
+# Build outputs & cache
 /dist/
+dist/
+mobile-app/dist/
 build/
 out/
 .next/
+.expo/
 
-# IDE files
+# IDE & OS files
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# OS files
 .DS_Store
 Thumbs.db
 
-# Expo
-.expo/
+# Certificates, Keys & Credentials
 *.jks
 *.p12
 *.key
+*.pem
+*.crt
 *.mobileprovision
 
-# Supabase
+# Supabase & MCP
 .supabase/
-
-# Orchids
-.orchids/
-
-# MCP config (contains secrets)
 .mcp.json
-
-# OpenClaude
 .claude/
 acli.exe
 *.exe
 
-# Native folders
+# Native folders & test temporaries
 mobile-app/android/
 mobile-app/ios/
-
-testsprite_tests\tmp\config.json
+testsprite_tests/
+backend/check_*.js
+backend/simulate_*.js
+backend/fix_*.js
+backend/approve_*.js
+backend/credit_*.js
+backend/test_*.js

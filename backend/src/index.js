@@ -62,10 +62,9 @@ app.use('/api', (err, req, res, next) => {
 
     // Postgres unique-violation / Supabase duplicate
     if (code === '23505') {
-        return res.status(409).json({ error: 'Duplicate entry — that record already exists.' });
+        return res.status(400).json({ error: 'You have already submitted this task.' });
     }
-    // Postgres check-constraint violation (e.g. users_points_nonnegative,
-    // payment_requests_amount_range)
+    // Postgres check-constraint violation
     if (code === '23514') {
         return res.status(400).json({ error: 'Operation violates a data constraint.' });
     }
@@ -78,8 +77,7 @@ app.use('/api', (err, req, res, next) => {
         return res.status(400).json({ error: pgMessage || message });
     }
 
-    // Network errors reaching the DB (Supabase unreachable) — never leak
-    // the raw fetch error; report a clean service-unavailable.
+    // Network errors reaching the DB (Supabase unreachable)
     if (message && (message.includes('fetch failed') ||
                     message.includes('ECONNREFUSED') ||
                     message.includes('ETIMEDOUT') ||
@@ -87,8 +85,8 @@ app.use('/api', (err, req, res, next) => {
         return res.status(503).json({ error: 'Service temporarily unavailable. Please try again.' });
     }
 
-    console.error('Unhandled API Error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('API Error:', err);
+    res.status(err.status || err.statusCode || 400).json({ error: message });
 });
 
 // Health Check

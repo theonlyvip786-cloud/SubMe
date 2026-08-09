@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, StatusBar, Platform, StyleSheet } from 'react-native';
+import { View, StatusBar, Platform, StyleSheet } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { enableScreens } from 'react-native-screens';
 import useAuthStore, { setupAxiosInterceptors } from './store/useAuthStore';
-import { colors, fontFamily } from './theme/designSystem';
+import { colors } from './theme/designSystem';
 import CustomBottomTabBar from './theme/BottomTabBar';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
 import { supabase } from './lib/supabase';
 
@@ -29,7 +29,6 @@ import ReferralScreen from './screens/ReferralScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import BannedScreen from './screens/BannedScreen';
 import AdminAnalyticsScreen from './screens/AdminAnalyticsScreen';
-import AdminReviewsScreen from './screens/AdminReviewsScreen';
 import AdminPaymentsScreen from './screens/AdminPaymentsScreen';
 import AdminToolsScreen from './screens/AdminToolsScreen';
 import AdminUsersScreen from './screens/AdminUsersScreen';
@@ -117,9 +116,8 @@ function AdminTabNavigator() {
         >
             <Tab.Screen name="Analytics" component={AdminAnalyticsScreen} />
             <Tab.Screen name="Users" component={AdminUsersScreen} />
-            <Tab.Screen name="Reviews" component={AdminReviewsScreen} />
-            <Tab.Screen name="Payments" component={AdminPaymentsScreen} />
             <Tab.Screen name="Tools" component={AdminToolsScreen} />
+            <Tab.Screen name="Payments" component={AdminPaymentsScreen} />
         </Tab.Navigator>
     );
 }
@@ -141,16 +139,14 @@ function AuthNavigator() {
     );
 }
 
+// Keep the native splash visible until we are ready (prevents white flash)
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Invisible placeholder shown while hydrating — no logo, no text, no spinner
 function BootSplash() {
-    return (
-        <View style={bootStyles.wrap}>
-            <Text style={bootStyles.logo}>SubMe ✦</Text>
-            <ActivityIndicator size="large" color={colors.lime} style={{ marginTop: 24 }} />
-            <Text style={{ color: colors.textMuted, marginTop: 12, fontSize: 12 }}>Loading...</Text>
-        </View>
-    );
+    return <View style={bootStyles.wrap} />;
 }
-const NAVIGATION_PERSISTENCE_KEY = 'SUBME_NAVIGATION_STATE_V2';
+
 
 function parseSupabaseUrl(url: string) {
     let queryString = '';
@@ -193,8 +189,6 @@ function parseReferralCodeFromUrl(url: string) {
 export default function App() {
     const { token, user, isAdminMode, hydrated, requiresPasswordReset } = useAuthStore();
     const [isReady, setIsReady] = useState(false);
-    const [initialState, setInitialState] = useState<any>();
-    const [isNavRestored, setIsNavRestored] = useState(false);
 
     useEffect(() => {
         // Check Web URL query params on load
@@ -240,46 +234,31 @@ export default function App() {
     }, []);
 
     useEffect(() => {
-        const restoreNavigationState = async () => {
-            try {
-                const savedStateString = Platform.OS === 'web' && typeof localStorage !== 'undefined'
-                    ? localStorage.getItem(NAVIGATION_PERSISTENCE_KEY)
-                    : await AsyncStorage.getItem(NAVIGATION_PERSISTENCE_KEY);
-
-                if (savedStateString) {
-                    const state = JSON.parse(savedStateString);
-                    setInitialState(state);
-                }
-            } catch (e) {
-                console.log('Nav restore error:', e);
-            } finally {
-                setIsNavRestored(true);
-            }
-        };
-
-        restoreNavigationState();
-    }, []);
-
-    useEffect(() => {
         setupAxiosInterceptors();
         let cancelled = false;
 
         // On web, if already hydrated from a previous session, show app immediately
         if (Platform.OS === 'web' && useAuthStore.getState().hydrated) {
             setIsReady(true);
+            SplashScreen.hideAsync().catch(() => {});
             return;
         }
 
-        // Safety timeout: force-ready after 2s max to avoid blank screen
+        // Safety timeout: force-ready after 3s max to avoid blank screen
         const safety = setTimeout(() => {
             if (!cancelled) {
                 useAuthStore.setState({ hydrated: true });
                 setIsReady(true);
+                SplashScreen.hideAsync().catch(() => {});
             }
-        }, 2000);
+        }, 3000);
 
         useAuthStore.getState().hydrate().finally(() => {
-            if (!cancelled) setIsReady(true);
+            if (!cancelled) {
+                setIsReady(true);
+                // Hide native splash only after auth state is known
+                SplashScreen.hideAsync().catch(() => {});
+            }
             clearTimeout(safety);
         });
 
@@ -301,19 +280,6 @@ export default function App() {
         <SafeAreaProvider style={{ flex: 1, height: '100%', width: '100%' }}>
             <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
             <NavigationContainer
-                initialState={initialState}
-                onStateChange={(state) => {
-                    if (state) {
-                        try {
-                            const jsonState = JSON.stringify(state);
-                            if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
-                                localStorage.setItem(NAVIGATION_PERSISTENCE_KEY, jsonState);
-                            } else {
-                                AsyncStorage.setItem(NAVIGATION_PERSISTENCE_KEY, jsonState);
-                            }
-                        } catch (e) {}
-                    }
-                }}
                 documentTitle={{ enabled: true, formatter: () => 'SubMe' }}
             >
                 <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bgPrimary }, animation: Platform.OS === 'web' ? 'none' : 'default' }}>
@@ -340,14 +306,6 @@ export default function App() {
 const bootStyles = StyleSheet.create({
     wrap: {
         flex: 1,
-        backgroundColor: colors.bgDark,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    logo: {
-        fontFamily,
-        fontSize: 32,
-        fontWeight: '800',
-        color: colors.lime,
+        backgroundColor: colors.bgPrimary, // same as app background — invisible transition
     },
 });

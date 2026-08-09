@@ -79,6 +79,24 @@ router.get('/tasks', asyncHandler(async (req, res) => {
     res.json(data);
 }));
 
+router.put('/tasks/:id', asyncHandler(async (req, res) => {
+    const { title, video_url, reward_points, required_watch_time, mcq_question, mcq_options, mcq_answer, thumbnail_id, is_vip } = req.body;
+    const { error } = await supabase.from('tasks').update({
+        title,
+        video_url,
+        reward_points: parseInt(reward_points || (is_vip ? '2' : '1')),
+        required_watch_time: parseInt(required_watch_time || '180'),
+        mcq_question,
+        mcq_options: Array.isArray(mcq_options) ? mcq_options : (mcq_options ? mcq_options.split(',').map(s => s.trim()) : []),
+        mcq_answer,
+        thumbnail_id: thumbnail_id || null,
+        is_vip: is_vip || false
+    }).eq('id', req.params.id);
+
+    if (error) throw error;
+    res.json({ message: 'Task updated successfully' });
+}));
+
 router.post('/tasks/:id/toggle', asyncHandler(async (req, res) => {
     const { data: task } = await supabase.from('tasks').select('is_active').eq('id', req.params.id).single();
     if (!task) return res.status(404).json({ error: 'Task not found' });

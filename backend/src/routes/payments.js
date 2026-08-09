@@ -264,11 +264,54 @@ router.post('/verify-utr', apiLimiter, authMiddleware, asyncHandler(async (req, 
     });
 }));
 
+// --- SMS Parsing Helpers ---
+const UTR_PATTERNS = [
+    /(?:UPI\s*Ref(?:erence)?\s*(?:No\.?|ID|#|:)?\s*)[:\s]?(\d{10,20})/i,
+    /(?:Ref(?:erence)?\s*(?:No\.?|ID|#|:)?)\s*[:\s]?(\d{10,20})/i,
+    /(?:Transaction\s*(?:ID|Ref)\s*[:\s]?)(\d{10,20})/i,
+    /(?:UTR\s*[:\s]?)([A-Z0-9]{10,22})/i,
+    /(\d{12})/,
+];
+const AMOUNT_PATTERNS = [
+    /(?:INR|Rs\.?|₹)\s*([0-9,]+(?:\.[0-9]{1,2})?)/i,
+    /([0-9,]+(?:\.[0-9]{1,2})?)\s*(?:INR|Rs\.?|₹)/i,
+    /debited\s+(?:INR|Rs\.?|₹)?\s*([0-9,]+(?:\.[0-9]{1,2})?)/i,
+];
+const BANK_DEBIT_KEYWORDS = [
+    'debited', 'debit', 'paid', 'transferred', 'sent',
+    'upi', 'bhim', 'phonepe', 'gpay', 'paytm',
+];
+
+function extractSmsData(body) {
+    if (!body) return null;
+    const lower = body.toLowerCase();
+    if (!BANK_DEBIT_KEYWORDS.some(kw => lower.includes(kw))) return null;
+
+    let utr = null;
+    for (const pat of UTR_PATTERNS) {
+        const m = body.match(pat);
+        if (m && m[1] && m[1].length >= 10) {
+            utr = m[1].trim().toUpperCase();
+            break;
+        }
+    }
+
+    let amt = null;
+    for (const pat of AMOUNT_PATTERNS) {
+        const m = body.match(pat);
+        if (m && m[1]) {
+            amt = Number(m[1].replace(/,/g, ''));
+            break;
+        }
+    }
+    return { utr, amount: amt };
+}
+
 // POST /api/payments/manual
 // Submit a UPI manual payment proof. UTR AND screenshot are both required.
 // Duplicate-UTR check runs again here (the verify-utr call is advisory).
 router.post('/manual', apiLimiter, authMiddleware, asyncHandler(async (req, res) => {
-    const { screenshot, amount, utr_number, auto_detected } = req.body;
+    const { screenshot, amount, utr_number, sms_raw, sms_timestamp_ms } = req.body;
     const parsedAmount = Number(amount);
     if (isNaN(parsedAmount) || !Number.isInteger(parsedAmount) || parsedAmount < 50) {
         return res.status(400).json({ error: 'Minimum payment is ₹50 (must be a whole number).' });
@@ -296,26 +339,50 @@ router.post('/manual', apiLimiter, authMiddleware, asyncHandler(async (req, res)
         return res.status(400).json({ error: 'This UTR / Transaction ID has already been submitted.' });
     }
 
+    // ── Auto-credit validation ─────────────────────────────────────────────
+    let status = 'pending';
+    let auto_credited = false;
+
+    if (sms_raw) {
+        const extracted = extractSmsData(sms_raw);
+        if (extracted && extracted.utr === cleanUtr && extracted.amount === parsedAmount) {
+            status = 'approved';
+            auto_credited = true;
+        }
+    }
+
     const { error } = await supabase.from('payment_requests').insert([{
         user_id: req.user.id,
         amount: parsedAmount,
         screenshot_url: screenshot || null,
         utr_number: cleanUtr,
-        payment_method: 'upi_manual',
-        status: 'pending',
+        payment_method: auto_credited ? 'upi_auto_sms' : 'upi_manual',
+        status: status,
     }]);
     if (error) throw error;
 
+    if (auto_credited) {
+        // Credit points atomically
+        await supabase.rpc('credit_points', { uid: req.user.id, delta: parsedAmount });
+        await supabase.from('transactions').insert([{
+            user_id: req.user.id,
+            type: 'topup',
+            amount: parsedAmount,
+            description: `UPI Auto-Credit: ₹${parsedAmount} | UTR: ${cleanUtr}`,
+        }]);
+    }
+
     await supabase.from('logs').insert([{
         user_id: req.user.id,
-        action: `UPI Payment Submitted: ₹${parsedAmount} | UTR: ${cleanUtr}${auto_detected ? ' | Auto-detected via SMS' : ''}`,
+        action: `UPI Payment ${auto_credited ? 'Auto-Credited' : 'Submitted'}: ₹${parsedAmount} | UTR: ${cleanUtr}`,
         ip_address: req.ip,
+        metadata: { utr: cleanUtr, amount: parsedAmount, sms_timestamp_ms, sms_raw },
     }]);
 
-    const msg = auto_detected
-        ? 'Payment detected! Admin will verify the UTR and credit your BUG coins shortly. 🎉'
+    const msg = auto_credited
+        ? 'Payment verified automatically! BUG\'s have been added to your wallet. 🎉'
         : 'Proof uploaded! Admin will verify and credit your coins shortly.';
-    res.json({ message: msg });
+    res.json({ message: msg, auto_credited });
 }));
 
 
