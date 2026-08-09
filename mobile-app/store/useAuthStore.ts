@@ -202,8 +202,8 @@ export const setupAxiosInterceptors = () => {
     if (interceptorSetup) return;
     interceptorSetup = true;
     
-    // Global 10-second timeout to prevent infinite hanging
-    axios.defaults.timeout = 10000;
+    // Global 60-second timeout to allow Render free tier backend time to wake up from sleep
+    axios.defaults.timeout = 60000;
     
     axios.interceptors.response.use(
         response => response,
