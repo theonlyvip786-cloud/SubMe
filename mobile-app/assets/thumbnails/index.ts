@@ -86,6 +86,5 @@ export function getThumbnailSource(thumbnailId: string | null | undefined): any 
     const entry = THUMBNAILS.find(t => t.id === thumbnailId);
     if (entry) return entry.source;
   }
-  const defaultInsta = THUMBNAILS.find(t => t.id.startsWith('insta'));
-  return defaultInsta ? defaultInsta.source : (THUMBNAILS[0] ? THUMBNAILS[0].source : null);
+  return null;
 }
