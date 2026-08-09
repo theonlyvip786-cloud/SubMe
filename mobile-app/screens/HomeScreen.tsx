@@ -196,8 +196,6 @@ export default function HomeScreen({ navigation }: any) {
   const [refreshing, setRefreshing] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
-  const [showWelcomePopup, setShowWelcomePopup] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
   const vipListRef = React.useRef<FlatList>(null);
   const [currentVipIndex, setCurrentVipIndex] = useState(0);
   const [now, setNow] = useState(Date.now());
@@ -230,22 +228,7 @@ export default function HomeScreen({ navigation }: any) {
 
   useEffect(() => {
     if (justLoggedIn) {
-      setShowConfetti(true);
-      setShowWelcomePopup(true);
       setJustLoggedIn(false);
-      
-      const timer = setTimeout(() => {
-        setShowWelcomePopup(false);
-      }, 3000); // Auto-dismiss toast after 3s
-      
-      const timer2 = setTimeout(() => {
-        setShowConfetti(false);
-      }, 5000);
-
-      return () => {
-        clearTimeout(timer);
-        clearTimeout(timer2);
-      };
     }
   }, [justLoggedIn, setJustLoggedIn]);
 
@@ -512,32 +495,6 @@ export default function HomeScreen({ navigation }: any) {
 
 
       </ScrollView>
-
-      {/* Welcome Back Toast (tap-to-dismiss, top of screen) */}
-      {showWelcomePopup && (
-        <TouchableOpacity
-          style={styles.welcomeToast}
-          activeOpacity={0.9}
-          onPress={() => setShowWelcomePopup(false)}
-        >
-          <Ionicons name="checkmark-circle" size={20} color={colors.lime} />
-          <Text style={styles.welcomeToastText}>Welcome back, {user?.username || 'there'}! 👋</Text>
-          <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.7)" />
-        </TouchableOpacity>
-      )}
-
-      {showConfetti && (
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, transform: [{ scale: 1.4 }] }} pointerEvents="none">
-          <ConfettiCannon
-            count={120}
-            origin={{x: 200, y: -20}}
-            explosionSpeed={350}
-            fallSpeed={3500}
-            fadeOut={true}
-            autoStart={true}
-          />
-        </View>
-      )}
     </SafeAreaView>
   );
 }
