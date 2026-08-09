@@ -24,13 +24,13 @@ import { getThumbnailSource } from '../assets/thumbnails';
 function CreatorAvatar({ userId, username, size = 18 }: { userId?: string; username?: string; size?: number }) {
   const [hasError, setHasError] = useState(false);
 
-  useEffect(() => {
-    setHasError(false);
-  }, [userId, username]);
-
   const displayName = username || 'Creator';
   const cacheBust = Math.floor(Date.now() / 30000);
   const avatarUrl = userId ? `${SUPABASE_URL}/storage/v1/object/public/avatars/${userId}.jpg?v=${cacheBust}` : null;
+
+  useEffect(() => {
+    setHasError(false);
+  }, [avatarUrl]);
   const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=16120F&color=CCFF00&bold=true&size=128`;
 
   return (
