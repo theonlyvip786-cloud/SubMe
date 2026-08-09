@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    Alert, ActivityIndicator, RefreshControl
+    Alert, ActivityIndicator, RefreshControl, Modal, Image, TouchableWithoutFeedback
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import axios from 'axios';
@@ -157,6 +157,23 @@ export default function AdminPaymentsScreen({ navigation }: any) {
                     )}
                 </ScrollView>
             </View>
+            {/* Proof Modal */}
+            <Modal visible={!!previewUrl} transparent animationType="fade">
+                <TouchableWithoutFeedback onPress={() => setPreviewUrl(null)}>
+                    <View style={styles.modalBg}>
+                        <TouchableWithoutFeedback>
+                            <View style={styles.modalContent}>
+                                <TouchableOpacity style={styles.closeBtn} onPress={() => setPreviewUrl(null)}>
+                                    <Ionicons name="close-circle" size={32} color={colors.white} />
+                                </TouchableOpacity>
+                                {previewUrl && (
+                                    <Image source={{ uri: previewUrl }} style={styles.previewImage} resizeMode="contain" />
+                                )}
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
         </View>
     );
 }
@@ -314,4 +331,27 @@ const styles = StyleSheet.create({
         fontWeight: typography.weight.bold,
         color: colors.textMuted,
     },
+    modalBg: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.85)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        width: '90%',
+        height: '80%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    previewImage: {
+        width: '100%',
+        height: '100%',
+        borderRadius: radii.xl,
+    },
+    closeBtn: {
+        position: 'absolute',
+        top: -40,
+        right: 0,
+        zIndex: 10,
+    }
 });

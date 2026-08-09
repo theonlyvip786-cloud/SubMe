@@ -254,7 +254,7 @@ function PaymentStepsGuide() {
     {
       step: '3',
       title: 'GPay Me "Pay Anyone" Par Tap Karein',
-      desc: 'Google Pay open hone par "Pay UPI ID or number" ya "Pay anyone" par tap karein aur UPI ID paste karke payment poori karein.',
+      desc: 'Google Pay open hone par "Pay UPI ID or number" ya "Pay anyone" par tap karein aur UPI ID paste karke payment poori karein. (Minimum Recharge: ₹50)',
       icon: 'arrow-forward-circle-outline',
       color: colors.lavender,
     },
@@ -1155,7 +1155,7 @@ export default function WalletScreen({ navigation }: any) {
               </View>
               <Text style={styles.modalTitle}>Save Payment Record</Text>
               <Text style={styles.modalSubtitle}>
-                Your BUG's will be added automatically when we detect your payment SMS.{"\n"}UTR + screenshot is optional — for admin audit only.
+                Your BUG's will be added automatically when we detect your payment SMS.{"\n"}Minimum recharge is ₹50. UTR + screenshot is optional — for admin audit only.
               </Text>
 
               <View style={styles.modalUtrBox}>
