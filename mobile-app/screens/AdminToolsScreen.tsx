@@ -34,7 +34,7 @@ export default function AdminToolsScreen({ navigation }: any) {
     const [newTask, setNewTask] = useState({
         title: '', video_url: '', reward_points: '1', required_watch_time: '180',
         mcq_question: '', mcq_options: ['', '', '', ''], mcq_answer: '', is_vip: false,
-        thumbnail_id: '' as string
+        thumbnail_id: '' as string, platform: 'youtube'
     });
 
     // Edit Task Modal State
@@ -164,7 +164,7 @@ export default function AdminToolsScreen({ navigation }: any) {
             setNewTask({
                 title: '', video_url: '', reward_points: '1', required_watch_time: '180',
                 mcq_question: '', mcq_options: ['', '', '', ''], mcq_answer: '', is_vip: false,
-                thumbnail_id: ''
+                thumbnail_id: '', platform: 'youtube'
             });
             setShowThumbPicker(false);
             setToolsSubTab('manage');
@@ -336,6 +336,18 @@ export default function AdminToolsScreen({ navigation }: any) {
                             {toolsSubTab === 'create' && (
                                 <View style={styles.formCard}>
                                     <Text style={styles.formTitle}>Publish Video Task</Text>
+
+                                    <Text style={styles.formLabel}>Platform</Text>
+                                    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 15 }}>
+                                        <TouchableOpacity style={[styles.segmentBtn, newTask.platform === 'youtube' && styles.segmentBtnActive, { flex: 1 }]} onPress={() => setNewTask({...newTask, platform: 'youtube'})}>
+                                            <Ionicons name="logo-youtube" size={16} color={newTask.platform === 'youtube' ? colors.white : colors.textMuted} style={{ marginRight: 6 }} />
+                                            <Text style={[styles.segmentText, newTask.platform === 'youtube' && styles.segmentTextActive]}>YouTube</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={[styles.segmentBtn, newTask.platform === 'instagram' && styles.segmentBtnActive, { flex: 1 }]} onPress={() => setNewTask({...newTask, platform: 'instagram'})}>
+                                            <Ionicons name="logo-instagram" size={16} color={newTask.platform === 'instagram' ? colors.white : colors.textMuted} style={{ marginRight: 6 }} />
+                                            <Text style={[styles.segmentText, newTask.platform === 'instagram' && styles.segmentTextActive]}>Instagram</Text>
+                                        </TouchableOpacity>
+                                    </View>
 
                                     <Text style={styles.formLabel}>Task Title</Text>
                                     <InputBox style={styles.formInputBox}>
@@ -692,6 +704,18 @@ export default function AdminToolsScreen({ navigation }: any) {
 
                     {editingTask && (
                         <ScrollView style={{ flex: 1, padding: spacing[5] }}>
+                            <Text style={styles.formLabel}>Platform</Text>
+                            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 15 }}>
+                                <TouchableOpacity style={[styles.segmentBtn, editingTask.platform === 'youtube' && styles.segmentBtnActive, { flex: 1 }]} onPress={() => setEditingTask({...editingTask, platform: 'youtube'})}>
+                                    <Ionicons name="logo-youtube" size={16} color={editingTask.platform === 'youtube' ? colors.white : colors.textMuted} style={{ marginRight: 6 }} />
+                                    <Text style={[styles.segmentText, editingTask.platform === 'youtube' && styles.segmentTextActive]}>YouTube</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.segmentBtn, editingTask.platform === 'instagram' && styles.segmentBtnActive, { flex: 1 }]} onPress={() => setEditingTask({...editingTask, platform: 'instagram'})}>
+                                    <Ionicons name="logo-instagram" size={16} color={editingTask.platform === 'instagram' ? colors.white : colors.textMuted} style={{ marginRight: 6 }} />
+                                    <Text style={[styles.segmentText, editingTask.platform === 'instagram' && styles.segmentTextActive]}>Instagram</Text>
+                                </TouchableOpacity>
+                            </View>
+
                             <Text style={styles.formLabel}>Task Title</Text>
                             <InputBox style={styles.formInputBox}>
                                 <AppTextInput 

@@ -59,7 +59,7 @@ router.get('/submissions/pending', asyncHandler(async (req, res) => {
 // --- TASK ROUTES ---
 
 router.post('/tasks', asyncHandler(async (req, res) => {
-    const { title, video_url, reward_points, is_vip, required_watch_time, mcq_question, mcq_options, mcq_answer, thumbnail_id } = req.body;
+    const { title, video_url, reward_points, is_vip, required_watch_time, mcq_question, mcq_options, mcq_answer, thumbnail_id, platform } = req.body;
     if (!title || !video_url || !reward_points || !required_watch_time || !mcq_question || !mcq_options || !mcq_answer) {
         return res.status(400).json({ error: 'Missing required fields: title, video_url, reward_points, required_watch_time, mcq_question, mcq_options, mcq_answer' });
     }
@@ -67,7 +67,8 @@ router.post('/tasks', asyncHandler(async (req, res) => {
         title, video_url, reward_points: parseInt(reward_points),
         is_vip: is_vip || false, required_watch_time: parseInt(required_watch_time),
         mcq_question, mcq_options, mcq_answer, is_active: true,
-        thumbnail_id: thumbnail_id || null
+        thumbnail_id: thumbnail_id || null,
+        platform: platform || 'youtube'
     }]);
     if (error) throw error;
     res.json({ message: 'Task created' });
@@ -80,7 +81,7 @@ router.get('/tasks', asyncHandler(async (req, res) => {
 }));
 
 router.put('/tasks/:id', asyncHandler(async (req, res) => {
-    const { title, video_url, reward_points, required_watch_time, mcq_question, mcq_options, mcq_answer, thumbnail_id, is_vip } = req.body;
+    const { title, video_url, reward_points, required_watch_time, mcq_question, mcq_options, mcq_answer, thumbnail_id, is_vip, platform } = req.body;
     const { error } = await supabase.from('tasks').update({
         title,
         video_url,
@@ -90,7 +91,8 @@ router.put('/tasks/:id', asyncHandler(async (req, res) => {
         mcq_options: Array.isArray(mcq_options) ? mcq_options : (mcq_options ? mcq_options.split(',').map(s => s.trim()) : []),
         mcq_answer,
         thumbnail_id: thumbnail_id || null,
-        is_vip: is_vip || false
+        is_vip: is_vip || false,
+        platform: platform || 'youtube'
     }).eq('id', req.params.id);
 
     if (error) throw error;

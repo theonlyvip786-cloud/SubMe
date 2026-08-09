@@ -48,7 +48,10 @@ export default function AdminPaymentsScreen({ navigation }: any) {
         try {
             await axios.post(`${API_URL}/api/admin/payments/${id}/${action}`, {}, { headers: { Authorization: `Bearer ${token}` } });
             setPayments(p => p.filter(i => i.id !== id));
-        } catch (e: any) { Alert.alert('Error', 'Action failed'); }
+        } catch (e: any) { 
+            console.error('Payment Action Error:', e.response?.data || e.message);
+            Alert.alert('Error', e.response?.data?.error || e.message || 'Action failed'); 
+        }
     };
 
     return (
