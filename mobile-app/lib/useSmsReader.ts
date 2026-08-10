@@ -97,18 +97,7 @@ function extractBankName(address: string, body: string): string {
 // ─── Permission Request ───────────────────────────────────────────────────────
 
 export async function requestSmsPermission(): Promise<boolean> {
-  if (Platform.OS !== 'android') return false;
-  try {
-    const granted = await PermissionsAndroid.requestMultiple([
-      PermissionsAndroid.PERMISSIONS.READ_SMS,
-      PermissionsAndroid.PERMISSIONS.RECEIVE_SMS,
-    ]);
-    return (
-      granted[PermissionsAndroid.PERMISSIONS.READ_SMS] === PermissionsAndroid.RESULTS.GRANTED
-    );
-  } catch {
-    return false;
-  }
+  return false;
 }
 
 // ─── SMS Reader (Native only — gracefully degrades in Expo Go) ───────────────
@@ -195,14 +184,7 @@ export async function readUpiPaymentSms(
 }
 
 function isSmsModuleAvailable(): boolean {
-  if (Platform.OS !== 'android') return false;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    require('react-native-get-sms-android');
-    return true;
-  } catch {
-    return false;
-  }
+  return false;
 }
 
 // ─── The Hook ────────────────────────────────────────────────────────────────

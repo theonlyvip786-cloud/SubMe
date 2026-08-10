@@ -23,11 +23,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#D4F071"
       },
-      "package": "com.subme.app",
-      "permissions": [
-        "android.permission.READ_SMS",
-        "android.permission.RECEIVE_SMS"
-      ]
+      "package": "com.subme.app"
     },
     "web": {
       "bundler": "metro"

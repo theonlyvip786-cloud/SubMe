@@ -20,12 +20,7 @@ import { requestSmsPermission } from '../lib/useSmsReader';
 const PERMISSION_SHOWN_KEY = 'subme_payment_permission_v1';
 
 export async function shouldShowPermissionModal(): Promise<boolean> {
-  try {
-    const val = await AsyncStorage.getItem(PERMISSION_SHOWN_KEY);
-    return val !== 'shown';
-  } catch {
-    return false;
-  }
+  return false;
 }
 
 export async function markPermissionModalShown(): Promise<void> {
