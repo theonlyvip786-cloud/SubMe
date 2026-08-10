@@ -253,8 +253,8 @@ router.post('/:id/submit', apiLimiter, authMiddleware, asyncHandler(async (req, 
         .update({ status: 'completed', completed_at: new Date().toISOString() })
         .eq('user_id', req.user.id).eq('task_id', task_id).eq('status', 'active');
 
-    // Instant point credit (1 BUG for standard task, 2 BUG's for VIP task)
-    const rewardAmount = task.is_vip ? 2 : 1;
+    // Instant point credit based on task's reward_points setting (fallback to 2 for VIP or 1 for standard)
+    const rewardAmount = parseInt(task.reward_points) || (task.is_vip ? 2 : 1);
     await supabase.rpc('credit_points', { user_uuid: req.user.id, amount: rewardAmount });
 
     // Append to transactions ledger

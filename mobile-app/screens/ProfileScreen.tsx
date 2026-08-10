@@ -10,6 +10,7 @@ import useAuthStore from '../store/useAuthStore';
 import { API_URL, SUPABASE_URL } from '../config';
 import { supabase } from '../lib/supabase';
 import * as ImagePicker from 'expo-image-picker';
+import { decode } from 'base64-arraybuffer';
 import * as Clipboard from 'expo-clipboard';
 import { colors, typography, spacing, radii, shadows, fontFamily } from '../theme/designSystem';
 import { AnimatedPressable, StaggeredItem } from '../theme/animations';
@@ -54,17 +55,22 @@ export default function ProfileScreen({ navigation }: any) {
         setAvatarError(false);
         setAvatarKey(Date.now());
 
-        // Attempt background storage upload if bucket is present
+        // Storage upload using base64-arraybuffer (works reliably across Expo, Native & Web)
         const userId = user?.id || 'admin';
-        if (userId && asset.uri) {
+        if (userId && asset.base64) {
           try {
-            const res = await fetch(asset.uri);
-            const blob = await res.blob();
-            await supabase.storage
+            const arrayBuffer = decode(asset.base64);
+            const { error: uploadErr } = await supabase.storage
               .from('avatars')
-              .upload(`${userId}.jpg`, blob, { contentType: 'image/jpeg', upsert: true });
+              .upload(`${userId}.jpg`, arrayBuffer, { contentType: 'image/jpeg', upsert: true });
+
+            if (uploadErr) {
+              console.error('[ProfileScreen] Supabase avatar upload error:', uploadErr.message);
+            } else {
+              console.log('[ProfileScreen] Successfully uploaded avatar to Supabase Storage for:', userId);
+            }
           } catch (storageErr) {
-            console.log('Background avatar upload note:', storageErr);
+            console.error('[ProfileScreen] Avatar storage exception:', storageErr);
           }
         }
 
