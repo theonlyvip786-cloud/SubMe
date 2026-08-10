@@ -2,7 +2,7 @@
   "expo": {
     "name": "SubMe",
     "slug": "subme-app",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "scheme": "subme",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -23,7 +23,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#D4F071"
       },
-      "package": "com.subme.app"
+      "package": "com.subme.app",
+      "versionCode": 2
     },
     "web": {
       "bundler": "metro"
