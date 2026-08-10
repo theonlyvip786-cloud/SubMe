@@ -68,7 +68,8 @@ router.post('/tasks', asyncHandler(async (req, res) => {
         is_vip: is_vip || false, required_watch_time: parseInt(required_watch_time),
         mcq_question, mcq_options, mcq_answer, is_active: true,
         thumbnail_id: thumbnail_id || null,
-        platform: platform || 'youtube'
+        platform: platform || 'youtube',
+        creator_user_id: req.user.id
     }]);
     if (error) throw error;
     res.json({ message: 'Task created' });
