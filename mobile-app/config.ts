@@ -1,7 +1,7 @@
 import { Platform, NativeModules } from 'react-native';
 
 const isWeb = Platform.OS === 'web';
-const RENDER_BACKEND_URL = 'https://subme-5zgl.onrender.com';
+const RENDER_BACKEND_URL = 'https://subko.onrender.com';
 
 const getWebApiUrl = (): string => {
   if (!isWeb) {
