@@ -253,8 +253,22 @@ router.post('/:id/submit', apiLimiter, authMiddleware, asyncHandler(async (req, 
         .update({ status: 'completed', completed_at: new Date().toISOString() })
         .eq('user_id', req.user.id).eq('task_id', task_id).eq('status', 'active');
 
-    // Instant point credit based on task's reward_points setting (fallback to 2 for VIP or 1 for standard)
-    const rewardAmount = parseInt(task.reward_points) || (task.is_vip ? 2 : 1);
+    // Ensure user profile exists in users table so credit_points RPC never fails
+    const { data: userRow } = await supabase.from('users').select('id').eq('id', req.user.id).maybeSingle();
+    if (!userRow) {
+        const refCode = req.user.id.replace(/-/g, '').toUpperCase();
+        await supabase.from('users').insert([{
+            id: req.user.id,
+            email: req.user.email || `user_${req.user.id.substring(0,6)}@subme.app`,
+            username: (req.user.email ? req.user.email.split('@')[0] : `User_${req.user.id.substring(0,4)}`),
+            referral_code: refCode,
+            points: 0,
+            status: 'active'
+        }]).catch(() => {});
+    }
+
+    // Instant point credit (1 BUG for standard task, 2 BUG's for VIP/Premium task)
+    const rewardAmount = task.is_vip ? 2 : 1;
     await supabase.rpc('credit_points', { user_uuid: req.user.id, amount: rewardAmount });
 
     // Append to transactions ledger
