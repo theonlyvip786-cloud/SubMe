@@ -156,7 +156,7 @@ async function cleanupExpiredTasks() {
 
 const server = app.listen(PORT, '0.0.0.0', async () => {
     console.log(`Server running on http://0.0.0.0:${PORT} (accessible at http://10.65.96.229:${PORT})`);
-    if (PORT !== 5000) {
+    if (PORT !== 5000 && process.env.NODE_ENV !== 'production') {
         console.warn(`Warning: mobile app config.ts expects API at http://localhost:5000 — unset PORT or use 5000`);
     }
     await supabase.checkConnection();
