@@ -24,9 +24,22 @@ router.get('/', authMiddleware, asyncHandler(async (req, res) => {
     if (submittedIds.length > 0) {
         query = query.not('id', 'in', `(${submittedIds.join(',')})`);
     }
-    const { data, error } = await query.order('is_vip', { ascending: false });
+    const { data: rawTasks, error } = await query.order('is_vip', { ascending: false });
     if (error) throw error;
-    res.json(data || []);
+
+    // Fetch view counts from task_sessions
+    const { data: sessions } = await supabase.from('task_sessions').select('task_id');
+    const viewMap = {};
+    (sessions || []).forEach(s => {
+        viewMap[s.task_id] = (viewMap[s.task_id] || 0) + 1;
+    });
+
+    const tasksWithViews = (rawTasks || []).map(task => ({
+        ...task,
+        views_count: Math.max(1, viewMap[task.id] || 0)
+    }));
+
+    res.json(tasksWithViews);
 }));
 
 // Start a task session (server-side timer for anti-cheat).
@@ -278,6 +291,37 @@ router.post('/:id/submit', apiLimiter, authMiddleware, asyncHandler(async (req, 
         type: 'reward',
         description: `Task Completed: ${task.title || 'Video'}${task.is_vip ? ' (VIP 2x)' : ''}`
     }]);
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Referral Hook: Credit 5 BUG's to referrer on referred user's FIRST completed task
+    // ─────────────────────────────────────────────────────────────────────────
+    try {
+        const { data: refRecord } = await supabase.from('referrals')
+            .select('id, referrer_id')
+            .eq('referred_user_id', req.user.id)
+            .eq('reward_earned', false)
+            .maybeSingle();
+
+        if (refRecord && refRecord.referrer_id) {
+            const { data: updatedRef, error: refUpdateErr } = await supabase.from('referrals')
+                .update({ reward_earned: true })
+                .eq('id', refRecord.id)
+                .eq('reward_earned', false)
+                .select();
+
+            if (!refUpdateErr && updatedRef && updatedRef.length > 0) {
+                await supabase.rpc('credit_points', { user_uuid: refRecord.referrer_id, amount: 5 });
+                await supabase.from('transactions').insert([{
+                    user_id: refRecord.referrer_id,
+                    amount: 5,
+                    type: 'reward',
+                    description: `Referral Reward: Friend completed their first task`
+                }]).catch(() => {});
+            }
+        }
+    } catch (refErr) {
+        console.error('[Referral Hook Error]', refErr);
+    }
 
     res.json({ message: 'Task completed! BUG\'s credited to your wallet instantly.', reward: rewardAmount });
 }));

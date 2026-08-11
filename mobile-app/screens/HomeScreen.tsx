@@ -352,8 +352,14 @@ export default function HomeScreen({ navigation }: any) {
                           <CreatorAvatar userId={task.users?.id || task.creator_user_id} username={task.users?.username} size={18} />
                           <Text style={styles.creatorName}>{task.users?.username ? `@${task.users.username}` : `Creator ${task.id.substring(0, 4)}`}</Text>
                         </View>
-                        <View style={styles.vipEarnPill}>
-                          <Text style={styles.vipEarnPillText}>+2 BUG's</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.25)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: radii.full }}>
+                            <Ionicons name="eye-outline" size={10} color={colors.white} style={{ marginRight: 2 }} />
+                            <Text style={{ fontSize: 10, fontFamily, fontWeight: '700', color: colors.white }}>{task.views_count || 1}</Text>
+                          </View>
+                          <View style={styles.vipEarnPill}>
+                            <Text style={styles.vipEarnPillText}>+2 BUG's</Text>
+                          </View>
                         </View>
                       </View>
                     </View>
@@ -412,9 +418,15 @@ export default function HomeScreen({ navigation }: any) {
                         <Text style={styles.taskTitleNew} numberOfLines={2}>
                           {task.title}
                         </Text>
-                        <View style={styles.taskCreatorRow}>
-                          <CreatorAvatar userId={task.users?.id || task.creator_user_id} username={task.users?.username} size={20} />
-                          <Text style={styles.taskCreatorText}>{task.users?.username ? `@${task.users.username}` : `Creator ${task.id.substring(0, 4)}`}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
+                          <View style={styles.taskCreatorRow}>
+                            <CreatorAvatar userId={task.users?.id || task.creator_user_id} username={task.users?.username} size={20} />
+                            <Text style={styles.taskCreatorText}>{task.users?.username ? `@${task.users.username}` : `Creator ${task.id.substring(0, 4)}`}</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bgSecondary, paddingHorizontal: 6, paddingVertical: 2, borderRadius: radii.full }}>
+                            <Ionicons name="eye-outline" size={11} color={colors.textMuted} style={{ marginRight: 2 }} />
+                            <Text style={{ fontSize: 10, fontFamily, fontWeight: '700', color: colors.textMuted }}>{task.views_count || 1}</Text>
+                          </View>
                         </View>
                       </View>
                     </AnimatedPressable>
@@ -467,9 +479,15 @@ export default function HomeScreen({ navigation }: any) {
                               </View>
                             </View>
                             <Text style={styles.instaShortTitle} numberOfLines={2}>{task.title}</Text>
-                            <View style={styles.instaShortCreatorRow}>
-                              <CreatorAvatar userId={task.users?.id || task.creator_user_id} username={task.users?.username} size={14} />
-                              <Text style={styles.instaShortCreatorName} numberOfLines={1}>{task.users?.username ? `@${task.users.username}` : `Creator`}</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: 2 }}>
+                              <View style={styles.instaShortCreatorRow}>
+                                <CreatorAvatar userId={task.users?.id || task.creator_user_id} username={task.users?.username} size={14} />
+                                <Text style={styles.instaShortCreatorName} numberOfLines={1}>{task.users?.username ? `@${task.users.username}` : `Creator`}</Text>
+                              </View>
+                              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Ionicons name="eye-outline" size={10} color={colors.textMuted} style={{ marginRight: 2 }} />
+                                <Text style={{ fontSize: 9, fontFamily, fontWeight: '700', color: colors.textMuted }}>{task.views_count || 1}</Text>
+                              </View>
                             </View>
                           </AnimatedPressable>
                         );
