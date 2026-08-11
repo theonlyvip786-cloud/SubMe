@@ -17,6 +17,7 @@ export default function ReferralScreen({ navigation }: any) {
     const [referralCode, setReferralCode] = useState(user?.referral_code || '');
     const [stats, setStats] = useState<any>(null);
     const [refreshing, setRefreshing] = useState(false);
+    const [referrals, setReferrals] = useState<any[]>([]);
 
     const [popupVisible, setPopupVisible] = useState(false);
     const [popupTitle, setPopupTitle] = useState('');
@@ -25,12 +26,14 @@ export default function ReferralScreen({ navigation }: any) {
     const refreshData = async (silent = false) => {
         if (!silent) setRefreshing(true);
         try {
-            const [userRes, statsRes] = await Promise.all([
+            const [userRes, statsRes, listRes] = await Promise.all([
                 axios.get(`${API_URL}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } }),
-                axios.get(`${API_URL}/api/referrals/stats`, { headers: { Authorization: `Bearer ${token}` } })
+                axios.get(`${API_URL}/api/referrals/stats`, { headers: { Authorization: `Bearer ${token}` } }),
+                axios.get(`${API_URL}/api/referrals/list`, { headers: { Authorization: `Bearer ${token}` } })
             ]);
             setReferralCode(userRes.data.referral_code);
             setStats(statsRes.data);
+            setReferrals(listRes.data || []);
         } catch (e) {} finally {
             if (!silent) setRefreshing(false);
         }
@@ -149,6 +152,28 @@ export default function ReferralScreen({ navigation }: any) {
                             </StaggeredItem>
                         ))}
                     </View>
+
+                    {/* Referred Users List */}
+                    {referrals && referrals.length > 0 && (
+                        <>
+                            <Text style={styles.sectionTitle}>Your Referrals</Text>
+                            <View style={styles.referralList}>
+                                {referrals.map((ref, i) => (
+                                    <StaggeredItem key={ref.users?.id || i} index={i} style={styles.referralItem}>
+                                        <View style={styles.referralInfo}>
+                                            <Text style={styles.refUser}>{ref.users?.username || 'Unknown User'}</Text>
+                                            <Text style={styles.refDate}>{new Date(ref.created_at).toLocaleDateString()} at {new Date(ref.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
+                                        </View>
+                                        <View style={[styles.refStatus, { backgroundColor: ref.reward_earned ? colors.mint : colors.surface }]}>
+                                            <Text style={[styles.refStatusText, { color: ref.reward_earned ? colors.black : colors.charcoal }]}>
+                                                {ref.reward_earned ? 'Earned' : 'Pending'}
+                                            </Text>
+                                        </View>
+                                    </StaggeredItem>
+                                ))}
+                            </View>
+                        </>
+                    )}
                 </ScrollView>
             </View>
 
@@ -347,14 +372,51 @@ const styles = StyleSheet.create({
     },
     stepContent: { flex: 1 },
     stepTitle: {
-        fontSize: typography.size.base,
+        fontSize: typography.size.sm,
         fontWeight: typography.weight.bold,
         color: colors.textPrimary,
         marginBottom: 2,
     },
     stepDesc: {
-        fontSize: typography.size.sm,
-        color: colors.textMuted,
+        fontSize: typography.size.xs,
+        color: colors.textSecondary,
         lineHeight: 18,
     },
+    referralList: {
+        marginTop: spacing[2],
+        marginBottom: spacing[12],
+    },
+    referralItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: colors.white,
+        padding: spacing[4],
+        borderRadius: radii.md,
+        marginBottom: spacing[3],
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.04)',
+    },
+    referralInfo: {
+        flex: 1,
+    },
+    refUser: {
+        fontSize: typography.size.sm,
+        fontWeight: typography.weight.semibold,
+        color: colors.textPrimary,
+        marginBottom: 2,
+    },
+    refDate: {
+        fontSize: typography.size.xs,
+        color: colors.textMuted,
+    },
+    refStatus: {
+        paddingHorizontal: spacing[3],
+        paddingVertical: spacing[1.5],
+        borderRadius: radii.full,
+    },
+    refStatusText: {
+        fontSize: typography.size.xs,
+        fontWeight: typography.weight.bold,
+    }
 });

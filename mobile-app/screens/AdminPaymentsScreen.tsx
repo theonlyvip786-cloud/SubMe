@@ -104,6 +104,11 @@ export default function AdminPaymentsScreen({ navigation }: any) {
                                                     )}
                                                 </View>
                                                 <Text style={styles.cardUser}>by @{pay.users?.username}</Text>
+                                                {pay.created_at && (
+                                                    <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 2 }}>
+                                                        {new Date(pay.created_at).toLocaleDateString()} {new Date(pay.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                    </Text>
+                                                )}
                                                 <TouchableOpacity 
                                                     style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3 }}
                                                     onPress={() => {

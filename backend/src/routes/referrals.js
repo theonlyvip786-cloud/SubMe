@@ -22,6 +22,21 @@ router.get('/stats', authMiddleware, asyncHandler(async (req, res) => {
     });
 }));
 
+// GET /api/referrals/list — returns the list of users referred by the current user
+router.get('/list', authMiddleware, asyncHandler(async (req, res) => {
+    const { data: referrals, error } = await supabase.from('referrals')
+        .select(`
+            created_at,
+            reward_earned,
+            users!referred_user_id ( id, username, email )
+        `)
+        .eq('referrer_id', req.user.id)
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json(referrals || []);
+}));
+
 // GET /api/referrals/code — returns the current user's own referral code
 // BUG-18: screens should be able to fetch the referral code independently
 router.get('/code', authMiddleware, asyncHandler(async (req, res) => {
