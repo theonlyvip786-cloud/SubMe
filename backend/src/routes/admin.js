@@ -171,24 +171,33 @@ router.post('/users/:id/ban', asyncHandler(async (req, res) => {
 router.post('/users/credit', async (req, res) => {
     const { userId, amount, description } = req.body;
     const creditAmount = Number(amount);
-    if (!userId || isNaN(creditAmount) || !Number.isInteger(creditAmount) || creditAmount <= 0) {
-        return res.status(400).json({ error: 'Invalid userId or amount (must be a positive whole number).' });
+    if (!userId || isNaN(creditAmount) || !Number.isInteger(creditAmount) || creditAmount === 0) {
+        return res.status(400).json({ error: 'Invalid userId or amount (must be a non-zero whole number).' });
     }
     try {
-        const { data: user, error } = await supabase.from('users').select('username, email').eq('id', userId).single();
+        const { data: user, error } = await supabase.from('users').select('username, email, points').eq('id', userId).single();
         if (error || !user) throw new Error('User not found');
+        
+        // Prevent negative balances
+        if (creditAmount < 0 && (user.points || 0) + creditAmount < 0) {
+            return res.status(400).json({ error: `Cannot deduct ${Math.abs(creditAmount)}. User only has ${user.points || 0} BUG's.` });
+        }
+
         const { error: creditErr } = await supabase.rpc('credit_points', { user_uuid: userId, amount: creditAmount });
-        if (creditErr) throw new Error('Failed to credit points');
+        if (creditErr) throw new Error('Failed to update points');
 
         await supabase.from('transactions').insert([{
             user_id: userId,
-            type: 'topup',
+            type: creditAmount > 0 ? 'topup' : 'spend',
             amount: creditAmount,
-            description: description || `Manual credit by admin — Payment received`
+            description: description || `Manual ${creditAmount > 0 ? 'credit' : 'deduction'} by admin`
         }]);
 
         const { data: updated } = await supabase.from('users').select('points').eq('id', userId).single();
-        res.json({ message: `${amount} SubMe BUG's credited to ${user.username}`, newBalance: updated?.points });
+        const msg = creditAmount > 0 
+            ? `${creditAmount} SubMe BUG's credited to ${user.username}`
+            : `${Math.abs(creditAmount)} SubMe BUG's deducted from ${user.username}`;
+        res.json({ message: msg, newBalance: updated?.points });
     } catch (err) { res.status(400).json({ error: err.message }); }
 });
 

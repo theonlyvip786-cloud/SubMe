@@ -187,7 +187,7 @@ export default function AdminUsersScreen({ navigation }: any) {
                                                 scaleTo={animation.pressScale}
                                             >
                                                 <Ionicons name="add-circle" size={16} color={colors.black} style={{ marginRight: 6 }} />
-                                                <Text style={[styles.banBtnText, { color: colors.black }]}>Add BUG's</Text>
+                                                <Text style={[styles.banBtnText, { color: colors.black }]}>Add / Remove BUG's</Text>
                                             </AnimatedPressable>
 
                                             <AnimatedPressable 
@@ -231,7 +231,7 @@ export default function AdminUsersScreen({ navigation }: any) {
                     />
                     <View style={styles.modalContent}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing[4] }}>
-                            <Text style={styles.modalTitle}>Credit BUG's</Text>
+                            <Text style={styles.modalTitle}>Modify BUG's</Text>
                             <TouchableOpacity onPress={() => setCreditModalVisible(false)}>
                                 <Ionicons name="close" size={20} color={colors.black} />
                             </TouchableOpacity>
@@ -240,11 +240,11 @@ export default function AdminUsersScreen({ navigation }: any) {
                             Ref Account: <Text style={{ fontWeight: typography.weight.bold, color: colors.black }}>@{creditTargetUser?.username}</Text>
                         </Text>
 
-                        <Text style={styles.formTitle}>Amount (BUG's)</Text>
+                        <Text style={styles.formTitle}>Amount (Use - to remove)</Text>
                         <InputBox style={{ marginBottom: 16 }}>
                             <AppTextInput 
                                 variant="flat"
-                                placeholder="e.g. 50"
+                                placeholder="e.g. 50 (add) or -50 (remove)"
                                 keyboardType="numeric"
                                 value={creditAmount}
                                 onChangeText={setCreditAmount}

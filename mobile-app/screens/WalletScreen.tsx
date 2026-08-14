@@ -965,6 +965,17 @@ export default function WalletScreen({ navigation }: any) {
       >
         <BalanceCard points={user?.points || 0} email={user?.email} />
 
+        {/* ─── MINIMUM RECHARGE WARNING BANNER ──────────────────────── */}
+        <View style={[styles.warningBanner, { backgroundColor: '#fee2e2', borderColor: '#ef4444' }]}>
+          <Ionicons name="alert-circle" size={24} color="#b91c1c" />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.warningTitle, { color: '#b91c1c', fontSize: 16 }]}>MINIMUM RECHARGE: ₹50</Text>
+            <Text style={[styles.warningText, { color: '#b91c1c' }]}>
+              Please do not pay less than ₹50. Any payment less than ₹50 will be REJECTED automatically!
+            </Text>
+          </View>
+        </View>
+
         {/* ─── Step-by-Step Payment Guide ───────────────────────────── */}
         <PaymentStepsGuide />
 
@@ -1051,26 +1062,27 @@ export default function WalletScreen({ navigation }: any) {
         ) : transactions.length === 0 ? (
           <Text style={styles.emptyTxt}>No transactions yet.</Text>
         ) : (
-          transactions.slice(0, 10).map((tx: any, i: number) => {
+              transactions.slice(0, 10).map((tx: any, i: number) => {
             const TX_ICONS: Record<string, any> = {
               earn: 'wallet-outline',
               reward: 'gift-outline',
               topup: 'cash-outline',
               spend: 'heart-outline',
               refund: 'return-down-back-outline',
+              rejected: 'close-circle-outline',
             };
-            const isPositive = tx.amount > 0;
+            const isPositive = tx.amount > 0 && tx.type !== 'rejected';
             return (
-              <StaggeredItem key={tx.id} index={i} style={styles.txRow}>
-                <View style={styles.txIcon}>
+              <StaggeredItem key={tx.id} index={i} style={[styles.txRow, tx.type === 'rejected' && { borderColor: '#fecaca', backgroundColor: '#fef2f2' }]}>
+                <View style={[styles.txIcon, tx.type === 'rejected' && { backgroundColor: '#ef4444' }]}>
                   <Ionicons name={TX_ICONS[tx.type] || 'ellipse-outline'} size={18} color={colors.white} />
                 </View>
                 <View style={styles.txInfo}>
-                  <Text style={styles.txType}>{tx.type}</Text>
-                  <Text style={styles.txDesc} numberOfLines={1}>{tx.description}</Text>
+                  <Text style={[styles.txType, tx.type === 'rejected' && { color: '#b91c1c' }]}>{tx.type}</Text>
+                  <Text style={[styles.txDesc, tx.type === 'rejected' && { color: '#991b1b' }]} numberOfLines={1}>{tx.description}</Text>
                 </View>
-                <Text style={[styles.txAmount, isPositive ? styles.txPos : styles.txNeg]}>
-                  {isPositive ? '+' : '-'}{Math.abs(tx.amount)}
+                <Text style={[styles.txAmount, isPositive ? styles.txPos : styles.txNeg, tx.type === 'rejected' && { color: '#ef4444' }]}>
+                  {tx.type === 'rejected' ? 'Rejected' : (isPositive ? '+' : '-')}{tx.type === 'rejected' ? '' : Math.abs(tx.amount)}
                 </Text>
               </StaggeredItem>
             );
