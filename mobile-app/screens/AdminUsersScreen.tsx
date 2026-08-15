@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    Alert, ActivityIndicator, Modal, Image, RefreshControl
+    Alert, ActivityIndicator, Modal, Image, RefreshControl, Animated
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -25,6 +25,29 @@ export default function AdminUsersScreen({ navigation }: any) {
     const [creditModalVisible, setCreditModalVisible] = useState(false);
     const [creditTargetUser, setCreditTargetUser] = useState<any>(null);
     const [creditAmount, setCreditAmount] = useState('');
+    
+    // Gift Popup State
+    const [giftPopupVisible, setGiftPopupVisible] = useState(false);
+    const [giftPopupData, setGiftPopupData] = useState<{ username: string; amount: number; isDeduction: boolean } | null>(null);
+    const giftScale = useRef(new Animated.Value(0)).current;
+    const giftOpacity = useRef(new Animated.Value(0)).current;
+
+    const showGiftPopup = (username: string, amount: number, isDeduction: boolean) => {
+        setGiftPopupData({ username, amount, isDeduction });
+        setGiftPopupVisible(true);
+        giftScale.setValue(0);
+        giftOpacity.setValue(0);
+        Animated.parallel([
+            Animated.spring(giftScale, { toValue: 1, friction: 4, tension: 100, useNativeDriver: true }),
+            Animated.timing(giftOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+        ]).start();
+        setTimeout(() => {
+            Animated.parallel([
+                Animated.spring(giftScale, { toValue: 0, friction: 6, tension: 80, useNativeDriver: true }),
+                Animated.timing(giftOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
+            ]).start(() => setGiftPopupVisible(false));
+        }, 3000);
+    };
 
     const insets = useSafeAreaInsets();
 
@@ -52,21 +75,27 @@ export default function AdminUsersScreen({ navigation }: any) {
 
     const submitCredit = async () => {
         if (!creditTargetUser || !creditAmount || isNaN(Number(creditAmount))) return;
+        const parsedAmount = parseInt(creditAmount);
+        if (parsedAmount === 0) return;
+        const isDeduction = parsedAmount < 0;
         setLoading(true);
         try {
             await axios.post(`${API_URL}/api/admin/users/credit`, {
                 userId: creditTargetUser.id,
-                amount: parseInt(creditAmount),
-                description: 'Manual credit from User Management'
+                amount: parsedAmount,
+                description: isDeduction ? 'Manual deduction by admin' : 'Manual credit from User Management'
             }, { headers: { Authorization: `Bearer ${token}` } });
             
-            Alert.alert('Success', `${creditAmount} BUG's added to @${creditTargetUser.username}`);
             setCreditModalVisible(false);
-            setCreditTargetUser(null);
             setCreditAmount('');
+            const targetUsername = creditTargetUser.username;
+            setCreditTargetUser(null);
             searchUsers(); // Refresh the list
-        } catch (e) {
-            Alert.alert('Error', 'Failed to credit user');
+            
+            // Show beautiful gift popup instead of plain Alert
+            showGiftPopup(targetUsername, Math.abs(parsedAmount), isDeduction);
+        } catch (e: any) {
+            Alert.alert('Error', e.response?.data?.error || (isDeduction ? 'Failed to deduct BUGs' : 'Failed to credit BUGs'));
         } finally {
             setLoading(false);
         }
@@ -268,6 +297,53 @@ export default function AdminUsersScreen({ navigation }: any) {
                     </View>
                 </View>
             </Modal>
+
+            {/* 🎁 Gift Popup Overlay */}
+            {giftPopupVisible && giftPopupData && (
+                <Modal transparent visible={giftPopupVisible} animationType="none">
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.45)' }}>
+                        <Animated.View style={{
+                            opacity: giftOpacity,
+                            transform: [{ scale: giftScale }],
+                            backgroundColor: colors.white,
+                            borderRadius: radii['2xl'],
+                            padding: spacing[8],
+                            alignItems: 'center',
+                            width: 300,
+                            ...shadows.lg,
+                        }}>
+                            {/* Big emoji/icon */}
+                            <View style={{
+                                width: 80, height: 80, borderRadius: 40,
+                                backgroundColor: giftPopupData.isDeduction ? '#fee2e2' : '#dcfce7',
+                                justifyContent: 'center', alignItems: 'center', marginBottom: spacing[4],
+                            }}>
+                                <Text style={{ fontSize: 40 }}>{giftPopupData.isDeduction ? '💸' : '🎁'}</Text>
+                            </View>
+                            <Text style={{ fontFamily, fontSize: typography.size.xl, fontWeight: '900', color: colors.black, marginBottom: spacing[2], textAlign: 'center' }}>
+                                {giftPopupData.isDeduction ? 'BUGs Removed!' : 'BUGs Sent! 🎉'}
+                            </Text>
+                            <Text style={{ fontFamily, fontSize: typography.size.base, color: '#6b7280', textAlign: 'center', lineHeight: 22 }}>
+                                {giftPopupData.isDeduction
+                                    ? `${giftPopupData.amount} BUG's have been removed from @${giftPopupData.username}'s wallet.`
+                                    : `You gifted ${giftPopupData.amount} BUG's to @${giftPopupData.username}! They'll love it! 🚀`
+                                }
+                            </Text>
+                            <View style={{
+                                marginTop: spacing[5],
+                                backgroundColor: giftPopupData.isDeduction ? '#ef4444' : colors.lime,
+                                paddingHorizontal: spacing[6],
+                                paddingVertical: spacing[3],
+                                borderRadius: radii.full,
+                            }}>
+                                <Text style={{ fontFamily, fontWeight: '900', fontSize: typography.size.lg, color: giftPopupData.isDeduction ? colors.white : colors.black }}>
+                                    {giftPopupData.isDeduction ? `-${giftPopupData.amount}` : `+${giftPopupData.amount}`} BUG's
+                                </Text>
+                            </View>
+                        </Animated.View>
+                    </View>
+                </Modal>
+            )}
         </View>
     );
 }

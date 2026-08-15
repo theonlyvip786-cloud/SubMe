@@ -324,20 +324,27 @@ export default function HomeScreen({ navigation }: any) {
                     scaleTo={animation.pressScale}
                   >
                     {localThumb ? (
-                      <Image source={localThumb} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+                      <Image source={localThumb} style={[StyleSheet.absoluteFillObject, { width: '100%', height: '100%' }]} resizeMode="cover" />
                     ) : ytThumb ? (
                       <Image source={{ uri: ytThumb }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
                     ) : (
                       <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.bgDark }]} />
                     )}
                     <LinearGradient
-                      colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.85)']}
+                      colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.88)']}
                       style={StyleSheet.absoluteFillObject}
                     />
                     
                     <View style={styles.vipHeader}>
-                      <View style={styles.vipPlatformBadge}>
-                        <Ionicons name={task.platform === 'instagram' ? 'logo-instagram' : 'logo-youtube'} size={14} color={colors.white} />
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <View style={styles.vipPlatformBadge}>
+                          <Ionicons name={task.platform === 'instagram' ? 'logo-instagram' : 'logo-youtube'} size={14} color={colors.white} />
+                        </View>
+                        {/* VIP Badge */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F59E0B', paddingHorizontal: 8, paddingVertical: 3, borderRadius: radii.full, gap: 3 }}>
+                          <Ionicons name="sparkles" size={10} color={colors.black} />
+                          <Text style={{ fontFamily, fontSize: 10, fontWeight: '900', color: colors.black }}>VIP TASK</Text>
+                        </View>
                       </View>
                       <View style={styles.vipExpiryBadge}>
                         <Ionicons name="time-outline" size={11} color={colors.white} style={{ marginRight: 3 }} />
