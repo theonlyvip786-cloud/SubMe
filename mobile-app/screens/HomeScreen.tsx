@@ -522,21 +522,21 @@ export default function HomeScreen({ navigation }: any) {
                                   </View>
                                 </View>
                                 <View style={{ flex: 1 }} />
-                                <View style={[styles.instaShortRewardBadge, task.is_vip && { backgroundColor: colors.lime }]}>
-                                  <Text style={[styles.instaShortRewardText, task.is_vip && { color: colors.black, fontWeight: '900' }]}>+{task.is_vip ? '2 BUG\'s' : '1 BUG'}</Text>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                  <View style={styles.instaShortViewsBadge}>
+                                    <Ionicons name="eye-outline" size={9} color={colors.white} style={{ marginRight: 2 }} />
+                                    <Text style={styles.instaShortViewsText}>{task.views_count || 1}</Text>
+                                  </View>
+                                  <View style={[styles.instaShortRewardBadge, task.is_vip && { backgroundColor: colors.lime }]}>
+                                    <Text style={[styles.instaShortRewardText, task.is_vip && { color: colors.black, fontWeight: '900' }]}>+{task.is_vip ? '2 BUG\'s' : '1 BUG'}</Text>
+                                  </View>
                                 </View>
                               </View>
                             </View>
                             <Text style={styles.instaShortTitle} numberOfLines={2}>{task.title}</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: 2 }}>
-                              <View style={styles.instaShortCreatorRow}>
-                                <CreatorAvatar userId={task.users?.id || task.creator_user_id} username={task.users?.username} size={14} />
-                                <Text style={styles.instaShortCreatorName} numberOfLines={1}>{task.users?.username ? `@${task.users.username}` : `Creator`}</Text>
-                              </View>
-                              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <Ionicons name="eye-outline" size={10} color={colors.textMuted} style={{ marginRight: 2 }} />
-                                <Text style={{ fontSize: 9, fontFamily, fontWeight: '700', color: colors.textMuted }}>{task.views_count || 1}</Text>
-                              </View>
+                            <View style={styles.instaShortCreatorRow}>
+                              <CreatorAvatar userId={task.users?.id || task.creator_user_id} username={task.users?.username} size={14} />
+                              <Text style={styles.instaShortCreatorName} numberOfLines={1}>{task.users?.username ? `@${task.users.username}` : `Creator`}</Text>
                             </View>
                           </AnimatedPressable>
                         );
@@ -1074,6 +1074,20 @@ const styles = StyleSheet.create({
   instaShortExpiryText: {
     fontFamily,
     fontSize: 7.5,
+    fontWeight: '800',
+    color: colors.white,
+  },
+  instaShortViewsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    paddingHorizontal: 5,
+    paddingVertical: 2.5,
+    borderRadius: 5,
+  },
+  instaShortViewsText: {
+    fontFamily,
+    fontSize: 8.5,
     fontWeight: '800',
     color: colors.white,
   },
