@@ -366,17 +366,6 @@ export default function HomeScreen({ navigation }: any) {
                             <View style={styles.vipPlatformBadge}>
                               <Ionicons name={task.platform === 'instagram' ? 'logo-instagram' : 'logo-youtube'} size={13} color={colors.white} />
                             </View>
-                            
-                            {/* Luxury Gold VIP Badge */}
-                            <LinearGradient
-                              colors={['#FFD700', '#FF9500']}
-                              start={{ x: 0, y: 0 }}
-                              end={{ x: 1, y: 0 }}
-                              style={styles.vipBadgePill}
-                            >
-                              <Ionicons name="trophy" size={11} color="#16120F" />
-                              <Text style={styles.vipBadgeText}>VIP EXCLUSIVE</Text>
-                            </LinearGradient>
                           </View>
 
                           <View style={styles.vipExpiryBadge}>
