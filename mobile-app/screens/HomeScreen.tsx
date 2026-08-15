@@ -23,7 +23,8 @@ import { Image, FlatList, Dimensions } from 'react-native';
 import { getThumbnailSource } from '../assets/thumbnails';
 
 const { width } = Dimensions.get('window');
-const BANNER_WIDTH = width - 48; // paddingHorizontal is 24 on each side
+const SCROLL_PADDING = spacing[4]; // matches scrollContent paddingHorizontal
+const BANNER_WIDTH = width - SCROLL_PADDING * 2; // full width minus padding on both sides
 
 
 function getYouTubeId(url: string): string | null {
@@ -216,7 +217,7 @@ export default function HomeScreen({ navigation }: any) {
           nextIndex = 0;
         }
         vipListRef.current?.scrollToOffset({
-          offset: nextIndex * (BANNER_WIDTH + 16), // width + marginRight
+          offset: nextIndex * (BANNER_WIDTH + 12), // width + gap
           animated: true,
         });
         setCurrentVipIndex(nextIndex);
@@ -305,11 +306,12 @@ export default function HomeScreen({ navigation }: any) {
               data={vipTasks}
               keyExtractor={(item) => `vip-${item.id}`}
               showsHorizontalScrollIndicator={false}
-              snapToInterval={BANNER_WIDTH + 16}
+              snapToInterval={BANNER_WIDTH + 12}
               decelerationRate="fast"
-              contentContainerStyle={styles.vipBannerContainer}
+              style={{ marginHorizontal: -SCROLL_PADDING }}
+              contentContainerStyle={[styles.vipBannerContainer, { paddingHorizontal: SCROLL_PADDING }]}
               onMomentumScrollEnd={(event) => {
-                const index = Math.round(event.nativeEvent.contentOffset.x / (BANNER_WIDTH + 16));
+                const index = Math.round(event.nativeEvent.contentOffset.x / (BANNER_WIDTH + 12));
                 setCurrentVipIndex(index);
               }}
               renderItem={({ item: task }) => {
@@ -760,6 +762,7 @@ const styles = StyleSheet.create({
   },
   vipBannerContainer: {
     paddingBottom: spacing[4],
+    gap: 12,
   },
   vipCard: {
     width: BANNER_WIDTH,
@@ -769,7 +772,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: colors.black,
     overflow: 'hidden',
-    marginRight: 16,
     ...shadows.md,
   },
   vipHeader: {
