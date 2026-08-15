@@ -52,7 +52,7 @@ function getTaskTimeLeft(createdAt?: string): string {
   return `${mins}m`;
 }
 
-function CreatorAvatar({ userId, username, size = 20 }: { userId?: string; username?: string; size?: number }) {
+function CreatorAvatar({ userId, username, size = 20, marginRight = 4 }: { userId?: string; username?: string; size?: number; marginRight?: number }) {
   const [hasError, setHasError] = useState(false);
 
   const displayName = username || 'Creator';
@@ -65,7 +65,7 @@ function CreatorAvatar({ userId, username, size = 20 }: { userId?: string; usern
   const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=16120F&color=CCFF00&bold=true&size=128`;
 
   return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', backgroundColor: colors.charcoal, justifyContent: 'center', alignItems: 'center', marginRight: 4 }}>
+    <View style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden', backgroundColor: colors.charcoal, justifyContent: 'center', alignItems: 'center', marginRight }}>
       {!hasError && avatarUrl ? (
         <Image
           source={{ uri: avatarUrl }}
@@ -352,10 +352,10 @@ export default function HomeScreen({ navigation }: any) {
                             <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.bgDark }]} />
                           )}
                           
-                          {/* Rich Cinematic Vignette */}
+                          {/* Clean subtle gradient so thumbnail stays bright and clear */}
                           <LinearGradient
-                            colors={['rgba(0,0,0,0.5)', 'rgba(15,12,10,0.2)', 'rgba(15,12,10,0.92)']}
-                            locations={[0, 0.35, 1]}
+                            colors={['rgba(0,0,0,0.3)', 'transparent', 'rgba(0,0,0,0.7)']}
+                            locations={[0, 0.45, 1]}
                             style={StyleSheet.absoluteFillObject}
                           />
                         </View>
@@ -391,7 +391,7 @@ export default function HomeScreen({ navigation }: any) {
                           <View style={styles.vipFooterRow}>
                             <View style={styles.creatorProfile}>
                               <View style={styles.creatorAvatarRing}>
-                                <CreatorAvatar userId={task.users?.id || task.creator_user_id} username={task.users?.username} size={18} />
+                                <CreatorAvatar userId={task.users?.id || task.creator_user_id} username={task.users?.username} size={16} marginRight={0} />
                               </View>
                               <Text style={styles.creatorName}>{task.users?.username ? `@${task.users.username}` : `Creator ${task.id.substring(0, 4)}`}</Text>
                             </View>
@@ -867,9 +867,14 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   creatorAvatarRing: {
-    borderRadius: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 1.5,
     borderColor: '#FFD700',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
   },
   vipViewsBadge: {
     flexDirection: 'row',
