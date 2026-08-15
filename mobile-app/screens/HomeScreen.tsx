@@ -316,62 +316,102 @@ export default function HomeScreen({ navigation }: any) {
               }}
               renderItem={({ item: task }) => {
                 const vid = getYouTubeId(task.video_url);
-                const ytThumb = vid ? `https://img.youtube.com/vi/${vid}/hqdefault.jpg` : null;
+                // Use mqdefault.jpg (native 16:9) fallback to hqdefault.jpg
+                const ytThumb = vid ? `https://img.youtube.com/vi/${vid}/mqdefault.jpg` : null;
                 const localThumb = getThumbnailSource(task.thumbnail_id);
 
                 return (
                   <AnimatedPressable
-                    style={styles.vipCard}
+                    style={styles.vipCardOuter}
                     onPress={() => navigation.navigate('TaskScreen', { task })}
                     scaleTo={animation.pressScale}
                   >
-                    {localThumb ? (
-                      <Image source={localThumb} style={[StyleSheet.absoluteFillObject, { width: '100%', height: '100%' }]} resizeMode="cover" />
-                    ) : ytThumb ? (
-                      <Image source={{ uri: ytThumb }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
-                    ) : (
-                      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.bgDark }]} />
-                    )}
+                    {/* Glowing Gold Gradient Border */}
                     <LinearGradient
-                      colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.88)']}
-                      style={StyleSheet.absoluteFillObject}
-                    />
-                    
-                    <View style={styles.vipHeader}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <View style={styles.vipPlatformBadge}>
-                          <Ionicons name={task.platform === 'instagram' ? 'logo-instagram' : 'logo-youtube'} size={14} color={colors.white} />
+                      colors={['#FFD700', '#FFA500', '#F59E0B', '#D4AF37', '#FFD700']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.vipCardBorder}
+                    >
+                      <View style={styles.vipCardInner}>
+                        {/* Background Thumbnail Image scaled slightly to crop any baked letterboxing */}
+                        <View style={StyleSheet.absoluteFillObject}>
+                          {localThumb ? (
+                            <Image 
+                              source={localThumb} 
+                              style={[StyleSheet.absoluteFillObject, { width: '100%', height: '100%', transform: [{ scale: 1.2 }], objectFit: 'cover' } as any]} 
+                              resizeMode="cover" 
+                            />
+                          ) : ytThumb ? (
+                            <Image 
+                              source={{ uri: ytThumb }} 
+                              style={[StyleSheet.absoluteFillObject, { width: '100%', height: '100%', transform: [{ scale: 1.2 }], objectFit: 'cover' } as any]} 
+                              resizeMode="cover" 
+                            />
+                          ) : (
+                            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.bgDark }]} />
+                          )}
+                          
+                          {/* Rich Cinematic Vignette */}
+                          <LinearGradient
+                            colors={['rgba(0,0,0,0.5)', 'rgba(15,12,10,0.2)', 'rgba(15,12,10,0.92)']}
+                            locations={[0, 0.35, 1]}
+                            style={StyleSheet.absoluteFillObject}
+                          />
                         </View>
-                        {/* VIP Badge */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F59E0B', paddingHorizontal: 8, paddingVertical: 3, borderRadius: radii.full, gap: 3 }}>
-                          <Ionicons name="sparkles" size={10} color={colors.black} />
-                          <Text style={{ fontFamily, fontSize: 10, fontWeight: '900', color: colors.black }}>VIP TASK</Text>
-                        </View>
-                      </View>
-                      <View style={styles.vipExpiryBadge}>
-                        <Ionicons name="time-outline" size={11} color={colors.white} style={{ marginRight: 3 }} />
-                        <Text style={styles.vipExpiryText}>{getTaskTimeLeft(task.created_at)}</Text>
-                      </View>
-                    </View>
+                        
+                        {/* Header Row */}
+                        <View style={styles.vipHeader}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <View style={styles.vipPlatformBadge}>
+                              <Ionicons name={task.platform === 'instagram' ? 'logo-instagram' : 'logo-youtube'} size={13} color={colors.white} />
+                            </View>
+                            
+                            {/* Luxury Gold VIP Badge */}
+                            <LinearGradient
+                              colors={['#FFD700', '#FF9500']}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 0 }}
+                              style={styles.vipBadgePill}
+                            >
+                              <Ionicons name="trophy" size={11} color="#16120F" />
+                              <Text style={styles.vipBadgeText}>VIP EXCLUSIVE</Text>
+                            </LinearGradient>
+                          </View>
 
-                    <View style={styles.vipFooter}>
-                      <Text style={styles.vipTitle} numberOfLines={2}>{task.title}</Text>
-                      <View style={styles.vipFooterRow}>
-                        <View style={styles.creatorProfile}>
-                          <CreatorAvatar userId={task.users?.id || task.creator_user_id} username={task.users?.username} size={18} />
-                          <Text style={styles.creatorName}>{task.users?.username ? `@${task.users.username}` : `Creator ${task.id.substring(0, 4)}`}</Text>
-                        </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.25)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: radii.full }}>
-                            <Ionicons name="eye-outline" size={10} color={colors.white} style={{ marginRight: 2 }} />
-                            <Text style={{ fontSize: 10, fontFamily, fontWeight: '700', color: colors.white }}>{task.views_count || 1}</Text>
+                          <View style={styles.vipExpiryBadge}>
+                            <Ionicons name="time-outline" size={11} color={colors.white} style={{ marginRight: 3 }} />
+                            <Text style={styles.vipExpiryText}>{getTaskTimeLeft(task.created_at)}</Text>
                           </View>
-                          <View style={styles.vipEarnPill}>
-                            <Text style={styles.vipEarnPillText}>+2 BUG's</Text>
+                        </View>
+
+                        {/* Footer Row */}
+                        <View style={styles.vipFooter}>
+                          <Text style={styles.vipTitle} numberOfLines={2}>{task.title}</Text>
+                          <View style={styles.vipFooterRow}>
+                            <View style={styles.creatorProfile}>
+                              <View style={styles.creatorAvatarRing}>
+                                <CreatorAvatar userId={task.users?.id || task.creator_user_id} username={task.users?.username} size={18} />
+                              </View>
+                              <Text style={styles.creatorName}>{task.users?.username ? `@${task.users.username}` : `Creator ${task.id.substring(0, 4)}`}</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                              <View style={styles.vipViewsBadge}>
+                                <Ionicons name="eye-outline" size={10} color={colors.white} style={{ marginRight: 2 }} />
+                                <Text style={{ fontSize: 10, fontFamily, fontWeight: '700', color: colors.white }}>{task.views_count || 1}</Text>
+                              </View>
+                              <LinearGradient
+                                colors={['#C6F277', '#A3E635']}
+                                style={styles.vipEarnPill}
+                              >
+                                <Ionicons name="flash" size={10} color="#16120F" style={{ marginRight: 2 }} />
+                                <Text style={styles.vipEarnPillText}>+2 BUG's</Text>
+                              </LinearGradient>
+                            </View>
                           </View>
                         </View>
                       </View>
-                    </View>
+                    </LinearGradient>
                   </AnimatedPressable>
                 );
               }}
@@ -390,7 +430,7 @@ export default function HomeScreen({ navigation }: any) {
 
               const renderYtTask = (task: any, i: number) => {
                 const vid = getYouTubeId(task.video_url);
-                const ytThumb = vid ? `https://img.youtube.com/vi/${vid}/hqdefault.jpg` : null;
+                const ytThumb = vid ? `https://img.youtube.com/vi/${vid}/mqdefault.jpg` : null;
                 const localThumb = getThumbnailSource(task.thumbnail_id);
 
                 return (
@@ -401,11 +441,11 @@ export default function HomeScreen({ navigation }: any) {
                       onPress={() => navigation.navigate('TaskScreen', { task })}
                       scaleTo={animation.pressScale}
                     >
-                      <View style={styles.taskThumbContainer}>
+                      <View style={[styles.taskThumbContainer, { overflow: 'hidden' }]}>
                         {localThumb ? (
-                          <Image source={localThumb} style={styles.taskThumbImage} resizeMode="cover" />
+                          <Image source={localThumb} style={[styles.taskThumbImage, { transform: [{ scale: 1.2 }], objectFit: 'cover' } as any]} resizeMode="cover" />
                         ) : ytThumb ? (
-                          <Image source={{ uri: ytThumb }} style={styles.taskThumbImage} />
+                          <Image source={{ uri: ytThumb }} style={[styles.taskThumbImage, { transform: [{ scale: 1.2 }], objectFit: 'cover' } as any]} resizeMode="cover" />
                         ) : (
                           <View style={[styles.taskThumbImage, { backgroundColor: colors.bgSecondary, justifyContent: 'center', alignItems: 'center' }]}>
                             <Ionicons name="videocam-outline" size={40} color={colors.textMuted} />
@@ -764,21 +804,46 @@ const styles = StyleSheet.create({
     paddingBottom: spacing[4],
     gap: 12,
   },
-  vipCard: {
+  vipCardOuter: {
     width: BANNER_WIDTH,
     aspectRatio: 16 / 9,
     borderRadius: radii.xl,
+    ...shadows.md,
+  },
+  vipCardBorder: {
+    flex: 1,
+    borderRadius: radii.xl,
+    padding: 2.5,
+  },
+  vipCardInner: {
+    flex: 1,
+    borderRadius: radii.xl - 2,
+    backgroundColor: '#0F0C0A',
+    overflow: 'hidden',
     padding: spacing[4],
     justifyContent: 'space-between',
-    backgroundColor: colors.black,
-    overflow: 'hidden',
-    ...shadows.md,
   },
   vipHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     zIndex: 2,
+  },
+  vipBadgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 9,
+    paddingVertical: 3.5,
+    borderRadius: radii.full,
+    gap: 4,
+    ...shadows.sm,
+  },
+  vipBadgeText: {
+    fontFamily,
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#16120F',
+    letterSpacing: 0.5,
   },
   vipTitle: {
     fontFamily,
@@ -787,6 +852,9 @@ const styles = StyleSheet.create({
     color: colors.white,
     lineHeight: 20,
     marginBottom: 4,
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   vipFooter: {
     zIndex: 2,
@@ -798,17 +866,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 2,
   },
-  vipEarnPill: {
-    backgroundColor: colors.lime,
-    paddingHorizontal: 8,
+  creatorAvatarRing: {
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#FFD700',
+  },
+  vipViewsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    paddingHorizontal: 7,
     paddingVertical: 3,
+    borderRadius: radii.full,
+  },
+  vipEarnPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 9,
+    paddingVertical: 3.5,
     borderRadius: radii.sm,
   },
   vipEarnPillText: {
     fontFamily,
     fontSize: 10,
     fontWeight: '900',
-    color: colors.black,
+    color: '#16120F',
   },
   creatorProfile: {
     flexDirection: 'row',
