@@ -467,6 +467,7 @@ const tapStyles = StyleSheet.create({
 export default function WalletScreen({ navigation }: any) {
   const { token, user, updateUser } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
+  const [showMinWarning, setShowMinWarning] = useState(true);
   const [fetching, setFetching] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [pendingPaymentCount, setPendingPaymentCount] = useState(0);
@@ -966,15 +967,23 @@ export default function WalletScreen({ navigation }: any) {
         <BalanceCard points={user?.points || 0} email={user?.email} />
 
         {/* ─── MINIMUM RECHARGE WARNING BANNER ──────────────────────── */}
-        <View style={[styles.warningBanner, { backgroundColor: '#fee2e2', borderColor: '#ef4444' }]}>
-          <Ionicons name="alert-circle" size={24} color="#b91c1c" />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.warningTitle, { color: '#b91c1c', fontSize: 16 }]}>MINIMUM RECHARGE: ₹50</Text>
-            <Text style={[styles.warningText, { color: '#b91c1c' }]}>
-              Please do not pay less than ₹50. Any payment less than ₹50 will be REJECTED automatically!
-            </Text>
+        {showMinWarning && (
+          <View style={[styles.warningBanner, { backgroundColor: '#fee2e2', borderColor: '#ef4444', position: 'relative' }]}>
+            <Ionicons name="alert-circle" size={24} color="#b91c1c" />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.warningTitle, { color: '#b91c1c', fontSize: 16 }]}>MINIMUM RECHARGE: ₹50</Text>
+              <Text style={[styles.warningText, { color: '#b91c1c' }]}>
+                Please do not pay less than ₹50. Any payment less than ₹50 will be REJECTED automatically!
+              </Text>
+            </View>
+            <TouchableOpacity 
+              onPress={() => setShowMinWarning(false)} 
+              style={{ padding: spacing[1], position: 'absolute', top: spacing[2], right: spacing[2] }}
+            >
+              <Ionicons name="close" size={20} color="#b91c1c" />
+            </TouchableOpacity>
           </View>
-        </View>
+        )}
 
         {/* ─── Step-by-Step Payment Guide ───────────────────────────── */}
         <PaymentStepsGuide />

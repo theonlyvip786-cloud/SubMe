@@ -114,6 +114,27 @@ export default function ReferralScreen({ navigation }: any) {
                         <Text style={styles.tapToCopy}>Tap to copy link</Text>
                     </StaggeredItem>
 
+                    {/* Code Card */}
+                    <StaggeredItem index={1} style={[styles.codeCardOuter, { marginTop: spacing[3] }]}>
+                        <Text style={styles.cardLabel}>Your Referral Code</Text>
+                        <TouchableOpacity style={styles.codeBox} onPress={async () => {
+                            if (user?.referral_code) {
+                                await Clipboard.setStringAsync(user.referral_code);
+                                setPopupTitle('Code Copied!');
+                                setPopupDesc('Your referral code is copied. Share it with friends!');
+                                setPopupVisible(true);
+                            }
+                        }}>
+                            <Text style={[styles.codeText, { fontSize: typography.size.lg, textAlign: 'center', letterSpacing: 2 }]} numberOfLines={1}>
+                                {user?.referral_code || '...'}
+                            </Text>
+                            <View style={styles.copyIconBg}>
+                                <Ionicons name="copy-outline" size={16} color={colors.charcoal} />
+                            </View>
+                        </TouchableOpacity>
+                        <Text style={styles.tapToCopy}>Tap to copy code</Text>
+                    </StaggeredItem>
+
                     {/* Stats Row */}
                     <View style={styles.statsRow}>
                         {[

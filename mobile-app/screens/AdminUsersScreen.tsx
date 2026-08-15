@@ -245,7 +245,7 @@ export default function AdminUsersScreen({ navigation }: any) {
                             <AppTextInput 
                                 variant="flat"
                                 placeholder="e.g. 50 (add) or -50 (remove)"
-                                keyboardType="numeric"
+                                keyboardType="numbers-and-punctuation"
                                 value={creditAmount}
                                 onChangeText={setCreditAmount}
                             />
